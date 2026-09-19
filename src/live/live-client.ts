@@ -11,9 +11,10 @@
 import { AudioIO } from './audio-io';
 
 export interface LiveToolHandler {
-  changePalette: (palette: 'vermilion' | 'ginkgo' | 'woodland' | 'twilight') => { success: boolean; active: string };
+  changePalette: (palette: 'vermilion' | 'gold' | 'ginkgo' | 'woodland' | 'twilight') => { success: boolean; active: string };
   triggerWindGust: (strength?: number) => { success: boolean; gustForce: number };
   spawnFlurry: (count?: number) => { success: boolean; spawnedCount: number };
+  drawPencilStroke: (shape?: 'leaf' | 'signature' | 'circle' | 'spiral') => { success: boolean; shape: string };
   evokeInscription: () => { success: boolean };
   captureArtwork: () => { success: boolean };
 }
@@ -347,28 +348,29 @@ export class GeminiLiveClient {
   private sendSetup(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    const systemPrompt = `You are 'Alastair', a witty, cheeky, and delightfully theatrical British creative partner co-directing a live demonstration of 'Autumn Sketchbook', an interactive WebGPU colored pencil art experience.
-You speak with authentic British flair, snappy comedic timing, playful banter, and enthusiasm ("Blimey!", "Right you are, darling!", "Let's cause some glorious chaos!", "Hold onto your teacup!", "Proper stunner!", "Let's splash some pure autumn drama on this paper!").
-You are NEVER stuffy or overly formal. You are having fun, teasing gently, and acting as a lively partner-in-crime on stage.
+    const systemPrompt = `You are 'Alastair', a witty, sharp-tongued, and playfully roasty British creative partner and art director co-hosting a live demonstration of 'Autumn Sketchbook', an interactive WebGPU colored pencil art experience.
+You speak with authentic British flair, snappy comedic timing, and affectionate roasts like a discerning West End art critic ("Right, darling, let's see if we can rescue this composition!", "Ah, the classic 'bury my mistakes under more foliage' maneuver.", "Is that an oak leaf or did a caterpillar have an existential crisis on the paper?", "Very bold line choice, though your art teacher might weep.", "When in doubt, dazzle them with warm amber and pretend it was intentional.", "Hold onto your teacup!").
+You are NOT mean or chaotic—you are funny, cheeky, and teasing about the user's artistic chops, but always supportive of the finished artwork.
 
-CRITICAL RULES:
-1. Spoken Turn Length: Keep EVERY spoken turn short, lively, and punchy—1 or 2 sentences maximum so conversation flows like rapid stage banter. Never monologue.
-2. British Accent & Slang: Maintain your playful British charm and funny expressions throughout.
-3. Multimodal Vision: You observe the WebGPU sketchbook via real-time image frames. Acknowledge and react to what the artist is drawing or what colors are on the canvas.
+CRITICAL TONE & VOCABULARY RULES:
+1. STRICTLY FORBIDDEN WORDS: NEVER say "spray", "shower", "splatter", "blast", "splash", or "chaos". This is NOT a graffiti wall or spray paint; this is fine colored pencil and delicate botanical leaves drifting across cold-press paper. Describe visual changes as pencil strokes, warm amber undertones, or leaves drifting across the paper.
+2. Spoken Turn Length: Keep EVERY spoken turn short, roasty, and punchy—1 or 2 sentences maximum. Quick stage banter, never monologue.
+3. Multimodal Vision: You observe the WebGPU sketchbook via real-time image frames. Roast whatever the artist is sketching or whatever empty space is left on the paper.
 4. PROACTIVE TOOL EXECUTION (MANDATORY):
 You have direct power to control this simulation via function tools! Whenever the user asks for or mentions any of the following, YOU MUST IMMEDIATELY CALL THE MATCHING TOOL alongside your short, witty spoken reaction:
-- 'changePalette': Call whenever the user asks to change colors or mentions gold, yellow, crimson, red, russet, brown, violet, plum, or autumn mood.
-  * 'ginkgo': Golden Ginkgo (radiant gold/yellow)
+- 'changePalette': Call whenever the user asks to change colors or mentions gold, amber, yellow, crimson, red, russet, brown, violet, plum, or autumn mood.
+  * 'gold': Autumn Gold (warm honey amber, ochre, sepia undertones)
   * 'vermilion': October Vermilion (crisp autumn crimson)
   * 'woodland': Deep Woodland Russet (warm earthy brown)
   * 'twilight': Twilight Frost Plum (dramatic violet frost)
 - 'triggerWindGust': Call whenever the user asks for wind, breeze, blow, gust, storm, or movement. (pass strength: 1.2 to 2.0).
-- 'spawnFlurry': Call whenever the user asks for leaves, shower, flurry, canopy, foliage, or 'more leaves'. (pass count: 30 to 80).
+- 'spawnFlurry': Call whenever the user asks for leaves, drift, flurry, canopy, foliage, or 'more leaves'. (pass count: 30 to 80).
+- 'drawPencilStroke': Call whenever the user asks you to draw, sketch, sign, doodle, or add pencil marks to the paper. (pass shape: 'signature' to sign in the top margin away from the ground leaves, 'leaf', 'circle', or 'spiral').
 - 'evokeInscription': Call whenever the user asks for writing, cursive, calligraphy, words, poetry, or 'capture the moment'.
 - 'captureArtwork': Call whenever the user asks to take a photo, snapshot, screenshot, save, or frame the art for exhibition.
 
 RULE: When responding to a request, ALWAYS execute the function tool in that turn! Never just say you will do it—fire the tool!
-FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool. Simply give a warm, cheeky British welcome to the user and ask what they want to direct first!`;
+FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool. Give a snappy, pleasantly roasty British greeting to the user, poke gentle fun at the canvas (e.g. asking if they're still working up the courage to make a mark), and ask what they want to direct first!`;
 
     const setupPayload = {
       setup: {
@@ -393,14 +395,14 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
             functionDeclarations: [
               {
                 name: 'changePalette',
-                description: 'Switches the color scheme of the autumn simulation to radiant gold, crimson red, russet brown, or violet plum.',
+                description: 'Switches the color scheme of the autumn simulation to warm autumn gold, crisp crimson red, russet brown, or violet plum.',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
                     palette: {
                       type: 'STRING',
-                      description: "The palette: 'vermilion' (October Crimson), 'ginkgo' (Golden Ginkgo), 'woodland' (Deep Woodland Russet), or 'twilight' (Twilight Frost Plum).",
-                      enum: ['vermilion', 'ginkgo', 'woodland', 'twilight']
+                      description: "The palette: 'gold' (Autumn Gold / warm amber ochre), 'vermilion' (October Crimson), 'woodland' (Deep Woodland Russet), or 'twilight' (Twilight Frost Plum).",
+                      enum: ['gold', 'vermilion', 'woodland', 'twilight']
                     }
                   },
                   required: ['palette']
@@ -408,7 +410,7 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
               },
               {
                 name: 'triggerWindGust',
-                description: 'Blows a strong wind gust across the canvas to rustle and swirl leaves.',
+                description: 'Blows a strong autumn gust across the canvas to rustle and swirl leaves.',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
@@ -421,7 +423,7 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
               },
               {
                 name: 'spawnFlurry',
-                description: 'Releases a shower or flurry of colorful autumn leaves from the canopy.',
+                description: 'Releases a flurry or drift of colored pencil autumn leaves from the canopy.',
                 parameters: {
                   type: 'OBJECT',
                   properties: {
@@ -433,8 +435,22 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
                 }
               },
               {
+                name: 'drawPencilStroke',
+                description: 'Uses the colored pencil to sketch directly on the cold-press paper canvas (e.g. signing Alastair\'s signature at the top of the sketchbook, sketching a botanical leaf contour, drawing a critique circle, or drawing a wind spiral).',
+                parameters: {
+                  type: 'OBJECT',
+                  properties: {
+                    shape: {
+                      type: 'STRING',
+                      description: "What to sketch: 'signature' (Alastair's artist signature flourish in the upper margin clear of ground leaves), 'leaf' (botanical leaf contour with veins in upper sketchbook area), 'circle' (an expressive critique circle), or 'spiral' (a windy spiral flourish).",
+                      enum: ['signature', 'leaf', 'circle', 'spiral']
+                    }
+                  }
+                }
+              },
+              {
                 name: 'evokeInscription',
-                description: "Commands airborne leaves to magically swirl into cursive calligraphy spelling 'capture the moment'.",
+                description: "Commands airborne leaves to swirl into cursive calligraphy spelling 'capture the moment'.",
                 parameters: {
                   type: 'OBJECT',
                   properties: {}
@@ -681,7 +697,7 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
             role: 'user',
             parts: [
               {
-                text: "Hello Alastair! Say a quick, cheerful, witty hello to the user, compliment the autumn sketchbook, and ask what they would like us to create first!"
+                text: "Hello Alastair! Give a snappy, delightfully roasty British welcome to the user, poke gentle fun at whatever is on the paper, and ask what they plan to direct first!"
               }
             ]
           }
@@ -704,21 +720,22 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
 
       try {
         if (call.name === 'changePalette') {
-          let pal = String(call.args?.palette || 'ginkgo').toLowerCase();
-          if (pal.includes('gold') || pal.includes('ginkgo') || pal.includes('yellow')) pal = 'ginkgo';
+          let pal = String(call.args?.palette || 'gold').toLowerCase();
+          if (pal.includes('gold') || pal.includes('ginkgo') || pal.includes('yellow') || pal.includes('amber')) pal = 'gold';
           else if (pal.includes('red') || pal.includes('vermilion') || pal.includes('crimson')) pal = 'vermilion';
           else if (pal.includes('wood') || pal.includes('russet') || pal.includes('brown') || pal.includes('earth')) pal = 'woodland';
           else if (pal.includes('twilight') || pal.includes('plum') || pal.includes('purple') || pal.includes('violet') || pal.includes('frost')) pal = 'twilight';
-          else pal = 'ginkgo';
+          else pal = 'gold';
 
           const palNames: Record<string, string> = {
-            ginkgo: 'Golden Ginkgo',
+            gold: 'Autumn Gold',
+            ginkgo: 'Autumn Gold',
             vermilion: 'October Vermilion',
             woodland: 'Woodland Russet',
             twilight: 'Twilight Frost'
           };
           toolDesc = `Switched palette to ${palNames[pal] || pal}`;
-          output = this.toolHandler.changePalette(pal as 'vermilion' | 'ginkgo' | 'woodland' | 'twilight');
+          output = this.toolHandler.changePalette(pal as 'vermilion' | 'gold' | 'ginkgo' | 'woodland' | 'twilight');
         } else if (call.name === 'triggerWindGust') {
           const strength = typeof call.args?.strength === 'number' ? call.args.strength : 1.5;
           toolDesc = `Swept autumn wind gust (${strength.toFixed(1)}x)`;
@@ -727,6 +744,10 @@ FIRST TURN EXCEPTION: On your very first greeting turn, DO NOT execute any tool.
           const count = typeof call.args?.count === 'number' ? call.args.count : 50;
           toolDesc = `Released flurry of ${count} leaves`;
           output = this.toolHandler.spawnFlurry(count);
+        } else if (call.name === 'drawPencilStroke') {
+          const shape = (call.args?.shape as 'leaf' | 'signature' | 'circle' | 'spiral') || 'leaf';
+          toolDesc = `Sketched pencil ${shape} on paper`;
+          output = this.toolHandler.drawPencilStroke(shape);
         } else if (call.name === 'evokeInscription') {
           toolDesc = `Inscribed 'capture the moment' in cursive`;
           output = this.toolHandler.evokeInscription();

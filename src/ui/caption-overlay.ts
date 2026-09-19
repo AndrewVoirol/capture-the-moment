@@ -143,6 +143,7 @@ export class CaptionOverlay {
     if (toolName === 'changePalette') icon = '🍁';
     else if (toolName === 'triggerWindGust') icon = '💨';
     else if (toolName === 'spawnFlurry') icon = '🍂';
+    else if (toolName === 'drawPencilStroke') icon = '✏️';
     else if (toolName === 'evokeInscription') icon = '✍️';
     else if (toolName === 'captureArtwork') icon = '📷';
 

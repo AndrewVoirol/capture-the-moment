@@ -184,12 +184,12 @@ export class LeafRenderer {
           let pal = i32(paletteId + 0.5);
 
           if (pal == 1) {
-            // Golden Ginkgo: Saffron, Pure Gold, Amber Ochre, Burnt Umber
-            res.under = mix(vec3<f32>(0.98, 0.88, 0.35), vec3<f32>(1.0, 0.92, 0.45), seed);
-            res.mid = mix(vec3<f32>(0.92, 0.72, 0.12), vec3<f32>(0.85, 0.62, 0.08), seed);
-            res.shadow = vec3<f32>(0.68, 0.45, 0.08);
-            res.vein = vec3<f32>(0.42, 0.28, 0.05);
-            res.backSide = vec3<f32>(0.88, 0.82, 0.55); // Pale golden underside
+            // Autumn Gold: Saffron Amber, Warm Ochre, Raw Umber, Sepia
+            res.under = mix(vec3<f32>(0.94, 0.78, 0.28), vec3<f32>(0.96, 0.82, 0.32), seed);
+            res.mid = mix(vec3<f32>(0.86, 0.58, 0.14), vec3<f32>(0.78, 0.50, 0.10), seed);
+            res.shadow = vec3<f32>(0.58, 0.36, 0.08);
+            res.vein = vec3<f32>(0.36, 0.22, 0.05);
+            res.backSide = vec3<f32>(0.84, 0.75, 0.48); // Warm buff underside
           } else if (pal == 2) {
             // Deep Woodland: Ochre, Terracotta, Burnt Sienna, Sepia
             res.under = mix(vec3<f32>(0.88, 0.68, 0.35), vec3<f32>(0.82, 0.55, 0.28), seed);

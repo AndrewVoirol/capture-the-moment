@@ -73,6 +73,7 @@ class AutumnSketchbookApp {
         changePalette: (pal) => this.ui.setPaletteByName(pal),
         triggerWindGust: (strength) => this.ui.triggerGust(strength),
         spawnFlurry: (count) => this.ui.spawnFlurry(count),
+        drawPencilStroke: (shape) => this.ui.sketchShape(shape, this.getPencilColor()),
         evokeInscription: () => this.ui.triggerEvokeWords(),
         captureArtwork: () => this.ui.handleCapture(),
       },

@@ -165,6 +165,7 @@ export class UIController {
     const swatches = document.querySelectorAll('.swatch');
     const paletteMap: Record<string, number> = {
       'vermilion': 0,
+      'gold': 1,
       'ginkgo': 1,
       'woodland': 2,
       'twilight': 3
@@ -390,9 +391,10 @@ export class UIController {
     }
   }
 
-  public setPaletteByName(palName: 'vermilion' | 'ginkgo' | 'woodland' | 'twilight'): { success: boolean; active: string } {
+  public setPaletteByName(palName: 'vermilion' | 'gold' | 'ginkgo' | 'woodland' | 'twilight'): { success: boolean; active: string } {
     const paletteMap: Record<string, number> = {
       'vermilion': 0,
+      'gold': 1,
       'ginkgo': 1,
       'woodland': 2,
       'twilight': 3
@@ -409,7 +411,8 @@ export class UIController {
     // Update active swatch in UI
     const swatches = document.querySelectorAll('.swatch');
     swatches.forEach((s) => {
-      if (s.getAttribute('data-palette') === palName) {
+      const p = s.getAttribute('data-palette');
+      if (p === palName || (palName === 'gold' && p === 'ginkgo') || (palName === 'ginkgo' && p === 'gold')) {
         s.classList.add('active');
       } else {
         s.classList.remove('active');
@@ -437,6 +440,169 @@ export class UIController {
     this.sim.triggerEvokeWords();
     this.audio.playLeafRustle(0.9);
     return { success: true };
+  }
+
+  public sketchShape(
+    shape: 'leaf' | 'signature' | 'circle' | 'spiral' = 'leaf',
+    color: string = 'rgba(192, 57, 43, 0.75)'
+  ): { success: boolean; shape: string } {
+    const strokes = this.getShapeStrokes(shape);
+    let strokeIdx = 0;
+    let ptIdx = 0;
+
+    const step = () => {
+      if (strokeIdx >= strokes.length) return;
+      const currentStroke = strokes[strokeIdx];
+      if (ptIdx + 1 < currentStroke.length) {
+        const [x0, y0] = currentStroke[ptIdx];
+        const [x1, y1] = currentStroke[ptIdx + 1];
+        this.paper.drawPencilStroke(x0, y0, x1, y1, color, 3.2);
+        if (ptIdx % 3 === 0) {
+          this.audio.playPencilScratch();
+        }
+        ptIdx++;
+        setTimeout(step, 16);
+      } else {
+        strokeIdx++;
+        ptIdx = 0;
+        setTimeout(step, 25);
+      }
+    };
+
+    step();
+    return { success: true, shape };
+  }
+
+  private getShapeStrokes(shape: 'leaf' | 'signature' | 'circle' | 'spiral'): Array<Array<[number, number]>> {
+    switch (shape) {
+      case 'signature': {
+        // Cursive "Alastair" signature flourish in upper right margin (clear of settled ground leaves)
+        return [
+          // Capital 'A'
+          [
+            [0.76, 0.22],
+            [0.77, 0.18],
+            [0.78, 0.15],
+            [0.79, 0.13],
+            [0.80, 0.17],
+            [0.81, 0.22],
+            [0.805, 0.18],
+            [0.775, 0.18]
+          ],
+          // Lowercase cursive 'l-a-s-t-a-i-r'
+          [
+            [0.81, 0.22],
+            [0.818, 0.16],
+            [0.824, 0.22], // 'l'
+            [0.830, 0.20],
+            [0.835, 0.19],
+            [0.840, 0.22], // 'a'
+            [0.846, 0.19],
+            [0.852, 0.22], // 's'
+            [0.858, 0.17],
+            [0.862, 0.22], // 't'
+            [0.868, 0.20],
+            [0.874, 0.22], // 'a'
+            [0.880, 0.20],
+            [0.885, 0.22], // 'i'
+            [0.892, 0.20],
+            [0.900, 0.22]  // 'r'
+          ],
+          // Flourished underline
+          [
+            [0.75, 0.242],
+            [0.79, 0.238],
+            [0.83, 0.241],
+            [0.88, 0.247],
+            [0.91, 0.252]
+          ],
+          // Crossbar on 't'
+          [
+            [0.854, 0.185],
+            [0.868, 0.185]
+          ],
+          // Accent dot
+          [
+            [0.885, 0.18],
+            [0.887, 0.18]
+          ]
+        ];
+      }
+      case 'circle': {
+        // Hand-sketched critique circle around center
+        const points: [number, number][] = [];
+        const steps = 28;
+        for (let i = 0; i <= steps; i++) {
+          const theta = (i / steps) * Math.PI * 2.25 - Math.PI * 0.5;
+          const r = 0.11 + Math.sin(i * 1.8) * 0.006;
+          points.push([0.50 + Math.cos(theta) * r, 0.45 + Math.sin(theta) * (r * 0.95)]);
+        }
+        return [points];
+      }
+      case 'spiral': {
+        // Wind flourish spiral
+        const points: [number, number][] = [];
+        const steps = 36;
+        for (let i = 0; i <= steps; i++) {
+          const theta = (i / steps) * Math.PI * 3.4;
+          const r = 0.015 + (i / steps) * 0.12;
+          points.push([0.50 + Math.cos(theta) * r, 0.45 + Math.sin(theta) * (r * 0.85)]);
+        }
+        return [points];
+      }
+      case 'leaf':
+      default: {
+        // Botanical leaf outline in upper-mid quadrant (clear of settled ground leaves)
+        return [
+          // Stem & central rib
+          [
+            [0.68, 0.52],
+            [0.681, 0.48],
+            [0.683, 0.43],
+            [0.684, 0.38],
+            [0.683, 0.33],
+            [0.68, 0.29],
+            [0.675, 0.26]
+          ],
+          // Left leaf blade contour
+          [
+            [0.68, 0.50],
+            [0.65, 0.47],
+            [0.625, 0.41],
+            [0.63, 0.35],
+            [0.655, 0.30],
+            [0.675, 0.26]
+          ],
+          // Right leaf blade contour
+          [
+            [0.68, 0.50],
+            [0.71, 0.47],
+            [0.735, 0.41],
+            [0.73, 0.35],
+            [0.705, 0.30],
+            [0.675, 0.26]
+          ],
+          // Vein pair 1
+          [
+            [0.683, 0.43],
+            [0.645, 0.40]
+          ],
+          [
+            [0.683, 0.43],
+            [0.715, 0.40]
+          ],
+          // Vein pair 2
+          [
+            [0.684, 0.36],
+            [0.65, 0.32]
+          ],
+          [
+            [0.684, 0.36],
+            [0.71, 0.32]
+          ]
+        ];
+      }
+    }
   }
 
   public handleCapture(): { success: boolean } {
