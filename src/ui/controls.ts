@@ -20,6 +20,9 @@ export class UIController {
   // Flash
   private elFlash!: HTMLElement;
 
+  // Interaction hint
+  private elInteractionHint!: HTMLElement;
+
   // Modal elements
   private elModal!: HTMLElement;
   private elCapturedCanvas!: HTMLCanvasElement;
@@ -93,6 +96,7 @@ export class UIController {
     this.elFps = document.getElementById('stat-fps')!;
     this.elViewfinder = document.getElementById('viewfinder')!;
     this.elFlash = document.getElementById('shutter-flash')!;
+    this.elInteractionHint = document.getElementById('interaction-hint')!;
 
     this.elModal = document.getElementById('capture-modal')!;
     this.elCapturedCanvas = document.getElementById('captured-canvas') as HTMLCanvasElement;
@@ -133,6 +137,7 @@ export class UIController {
     btnCapture.addEventListener('click', () => this.handleCapture());
 
     window.addEventListener('keydown', (e) => {
+      this.dismissHint();
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
         if (this.elModal.classList.contains('hidden')) {
@@ -154,6 +159,7 @@ export class UIController {
     const toolBtns = document.querySelectorAll('.tool-btn');
     toolBtns.forEach(btn => {
       btn.addEventListener('click', () => {
+        this.dismissHint();
         toolBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const tool = btn.getAttribute('data-tool') as 'breeze' | 'pencil' | 'gust';
@@ -173,6 +179,7 @@ export class UIController {
 
     swatches.forEach(sw => {
       sw.addEventListener('click', () => {
+        this.dismissHint();
         swatches.forEach(s => s.classList.remove('active'));
         sw.classList.add('active');
         const palName = sw.getAttribute('data-palette')!;
@@ -190,18 +197,21 @@ export class UIController {
     // 4. Action Buttons
     const btnGust = document.getElementById('btn-gust')!;
     btnGust.addEventListener('click', () => {
+      this.dismissHint();
       this.sim.triggerGust(1.4);
       this.audio.playLeafRustle(1.0);
     });
 
     const btnShower = document.getElementById('btn-shower')!;
     btnShower.addEventListener('click', () => {
+      this.dismissHint();
       this.sim.spawnFlurry(45);
       this.audio.playLeafRustle(0.7);
     });
 
     const btnEvoke = document.getElementById('btn-reveal-words')!;
     btnEvoke.addEventListener('click', () => {
+      this.dismissHint();
       this.sim.triggerEvokeWords();
       this.audio.playLeafRustle(0.9);
     });
@@ -606,6 +616,7 @@ export class UIController {
   }
 
   public handleCapture(): { success: boolean } {
+    this.dismissHint();
     this.sim.isPaused = true;
     this.audio.playShutter();
 
@@ -646,6 +657,12 @@ export class UIController {
     link.download = `capture-the-moment-autumn-${Date.now()}.png`;
     link.href = this.elCapturedCanvas.toDataURL('image/png');
     link.click();
+  }
+
+  public dismissHint() {
+    if (this.elInteractionHint && !this.elInteractionHint.classList.contains('dismissed')) {
+      this.elInteractionHint.classList.add('dismissed');
+    }
   }
 
   public updateTelemetry(leavesCount: number, groundCount: number, fps: number) {

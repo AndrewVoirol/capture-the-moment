@@ -83,9 +83,11 @@ class AutumnSketchbookApp {
           this.ui.setCoStarButtonState(status, errorMsg);
         },
         onUserTranscript: (text) => {
+          this.ui.dismissHint();
           this.captionOverlay.showUserTranscript(text);
         },
         onCoStarTranscript: (text, isChunk) => {
+          this.ui.dismissHint();
           if (isChunk) {
             this.captionOverlay.appendCoStarTranscript(text);
           } else {
@@ -140,6 +142,7 @@ class AutumnSketchbookApp {
     };
 
     const onPointerDown = (e: MouseEvent) => {
+      this.ui.dismissHint();
       this.isPointerDown = true;
       const { x, y, u, v } = getNormCoords(e);
       this.sim.mouseX = x;

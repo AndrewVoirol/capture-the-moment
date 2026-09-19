@@ -26,14 +26,16 @@
         <div class="header-right">
           <!-- Gemini Multimodal Live Co-Star -->
           <div class="costar-control-cluster">
-            <select id="select-costar-model" class="costar-select" title="Gemini Live Model">
+            <label for="select-costar-model" class="sr-only">Gemini Live Model</label>
+            <select id="select-costar-model" class="costar-select" title="Gemini Live Model" aria-label="Select Gemini Live Model">
               <option value="models/gemini-3.8-live" selected>Gemini 3.8 Live</option>
               <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
               <option value="models/gemini-2.0-flash-realtime-exp">Gemini 2.0 Realtime</option>
               <option value="models/gemini-3.8-live-extended-thinking">Gemini 3.8 (Thinking)</option>
             </select>
 
-            <select id="select-costar-voice" class="costar-select" title="Co-Star Voice">
+            <label for="select-costar-voice" class="sr-only">Co-Star Voice</label>
+            <select id="select-costar-voice" class="costar-select" title="Co-Star Voice" aria-label="Select Co-Star Voice">
               <option value="Capella" selected>Capella (British Accent)</option>
               <option value="Fenrir">Fenrir (Theatrical & Bold)</option>
               <option value="Puck">Puck (Lively & Witty)</option>
@@ -43,7 +45,7 @@
               <option value="Kore">Kore (Crisp & Direct)</option>
             </select>
 
-            <button id="btn-toggle-costar" class="btn-costar" title="Start Gemini Multimodal Live Co-Star">
+            <button id="btn-toggle-costar" class="btn-costar" title="Start Gemini Multimodal Live Co-Star" aria-label="Start Gemini Multimodal Live Co-Star">
               <span class="costar-indicator-dot"></span>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -55,7 +57,7 @@
             </button>
 
             <!-- Mic Mute Toggle Button -->
-            <button id="btn-mic-mute" class="btn-icon costar-mic-btn hidden" title="Mute/Unmute Mic">
+            <button id="btn-mic-mute" class="btn-icon costar-mic-btn hidden" title="Mute/Unmute Mic" aria-label="Mute or Unmute Microphone">
               <svg id="icon-mic-active" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -66,13 +68,13 @@
           </div>
 
           <!-- 30s Demo Recorder -->
-          <button id="btn-record-demo" class="btn-record" title="Record 30-second stage demo with mixed audio">
+          <button id="btn-record-demo" class="btn-record" title="Record 30-second stage demo with mixed audio" aria-label="Record 30-second stage demo with mixed audio">
             <span class="rec-dot"></span>
             <span id="rec-btn-label">Record Demo</span>
           </button>
 
           <!-- API Key Config Button -->
-          <button id="btn-api-key" class="btn-icon" title="Gemini API Key Settings">
+          <button id="btn-api-key" class="btn-icon" title="Gemini API Key Settings" aria-label="Gemini API Key Settings">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -80,7 +82,7 @@
           </button>
 
           <!-- Capture Button -->
-          <button id="btn-capture" class="btn-primary" title="Freeze this instant & frame your sketch (Space)">
+          <button id="btn-capture" class="btn-primary" title="Freeze this instant & frame your sketch (Space)" aria-label="Freeze this instant and frame your sketch">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
               <circle cx="12" cy="13" r="4"></circle>
@@ -198,12 +200,12 @@
               </svg>
               <span>Evoke Text</span>
             </button>
-            <button id="btn-toggle-vf" class="btn-icon" title="Toggle Sketchbook Viewfinder">
+            <button id="btn-toggle-vf" class="btn-icon" title="Toggle Sketchbook Viewfinder" aria-label="Toggle Sketchbook Viewfinder">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 7V3h4m10 0h4v4M3 17v4h4m10 0h4v-4"></path>
               </svg>
             </button>
-            <button id="btn-toggle-sound" class="btn-icon" title="Toggle Sketch Sounds">
+            <button id="btn-toggle-sound" class="btn-icon" title="Toggle Sketch Sounds" aria-label="Toggle Sketch Sounds">
               <svg id="icon-sound-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -276,10 +278,11 @@
           <div class="key-modal-body">
             <h3 class="key-modal-title">Gemini API Key</h3>
             <p class="key-modal-desc">Enter your Google Gemini API key to enable the Live Co-Star voice agent, live vision, and real-time tool calling.</p>
-            <div class="key-input-row">
-              <input type="password" id="input-gemini-key" placeholder="AIzaSy..." autocomplete="off" />
-              <button id="btn-save-key" class="btn-primary">Save Key</button>
-            </div>
+            <form id="form-gemini-key" class="key-input-row" onsubmit="return false;">
+              <label for="input-gemini-key" class="sr-only">Gemini API Key</label>
+              <input type="password" id="input-gemini-key" placeholder="AIzaSy..." autocomplete="off" aria-label="Gemini API Key" />
+              <button type="submit" id="btn-save-key" class="btn-primary">Save Key</button>
+            </form>
             <p class="key-modal-subtext">You can also set <code>GEMINI_API_KEY</code> in your environment or in a <code>.env.local</code> file.</p>
           </div>
         </div>
