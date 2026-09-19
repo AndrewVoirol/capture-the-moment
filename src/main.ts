@@ -26,6 +26,7 @@ class AutumnSketchbookApp {
   private isPointerDown: boolean = false;
   private lastPointerX: number = 0;
   private lastPointerY: number = 0;
+  private lastScratchTime: number = 0;
 
   public async start() {
     this.canvas = document.getElementById('webgpu-canvas') as HTMLCanvasElement;
@@ -50,6 +51,10 @@ class AutumnSketchbookApp {
     this.leafRenderer = new LeafRenderer(this.gpu);
     this.textRenderer = new TextRenderer(this.gpu);
 
+    // Extract exact stroke waypoints along cursive letters for leaf constellation
+    const waypoints = this.textRenderer.extractStrokeWaypoints(140);
+    this.sim.setWordWaypoints(waypoints);
+
     this.ui = new UIController(
       this.sim,
       this.paper,
@@ -72,7 +77,6 @@ class AutumnSketchbookApp {
       const rect = canvas.getBoundingClientRect();
       const u = (e.clientX - rect.left) / rect.width;
       const v = (e.clientY - rect.top) / rect.height;
-      // WebGPU clip coordinates: x in [-1, 1], y in [-1, 1] (y inverted: top is +1, bottom is -1)
       const x = (u * 2 - 1);
       const y = -(v * 2 - 1);
       return { x, y, u, v };
@@ -89,6 +93,7 @@ class AutumnSketchbookApp {
 
       if (this.sim.currentTool === 'pencil') {
         this.audio.playPencilScratch();
+        this.lastScratchTime = performance.now();
         const color = this.getPencilColor();
         this.paper.drawPencilStroke(u, v, u + 0.001, v + 0.001, color, 3.5);
       } else if (this.sim.currentTool === 'gust') {
@@ -99,7 +104,6 @@ class AutumnSketchbookApp {
     const onPointerMove = (e: MouseEvent) => {
       const { x, y, u, v } = getNormCoords(e);
 
-      // Compute velocity
       const dt = 0.016;
       this.sim.mouseVx = (x - this.sim.mouseX) / dt * 0.05;
       this.sim.mouseVy = (y - this.sim.mouseY) / dt * 0.05;
@@ -108,7 +112,11 @@ class AutumnSketchbookApp {
       this.sim.mouseActive = true;
 
       if (this.isPointerDown && this.sim.currentTool === 'pencil') {
-        this.audio.playPencilScratch();
+        const now = performance.now();
+        if (now - this.lastScratchTime > 140) {
+          this.audio.playPencilScratch();
+          this.lastScratchTime = now;
+        }
         const color = this.getPencilColor();
         this.paper.drawPencilStroke(this.lastPointerX, this.lastPointerY, u, v, color, 3.5);
       }
@@ -128,7 +136,6 @@ class AutumnSketchbookApp {
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
 
-    // Touch support
     canvas.addEventListener('touchstart', (e) => {
       if (e.touches.length > 0) {
         onPointerDown(e.touches[0] as unknown as MouseEvent);
@@ -145,15 +152,14 @@ class AutumnSketchbookApp {
   }
 
   private getPencilColor(): string {
-    // Return authentic colored pencil hex colors based on active palette
     switch (this.sim.currentPalette) {
-      case 1: // Golden Ginkgo
+      case 1:
         return 'rgba(212, 172, 13, 0.65)';
-      case 2: // Deep Woodland
+      case 2:
         return 'rgba(120, 66, 18, 0.7)';
-      case 3: // Twilight Frost
+      case 3:
         return 'rgba(91, 44, 111, 0.65)';
-      default: // October Vermilion
+      default:
         return 'rgba(192, 57, 43, 0.75)';
     }
   }
@@ -168,6 +174,7 @@ class AutumnSketchbookApp {
 
   private onCaptureMoment() {
     this.isCapturing = true;
+    this.sim.isPaused = true;
   }
 
   private renderLoop(timeMs: number) {
@@ -185,14 +192,14 @@ class AutumnSketchbookApp {
       this.ui.updateTelemetry(this.sim.leaves.length, this.sim.groundCount, this.currentFps);
     }
 
-    // 1. Simulation step
+    // 1. Simulation step (respects isPaused)
     const aspect = this.gpu.width / this.gpu.height;
     this.sim.update(dt, aspect);
 
-    // 2. Pack instance buffer partitioned by species
+    // 2. Pack instance buffer partitioned by botanical species
     const packResult = this.sim.packInstanceData(this.leafRenderer.instanceData);
 
-    // 3. GPU Uniform & Instance uploads (Zero dynamic allocations!)
+    // 3. GPU Uniform & Instance uploads (Zero dynamic allocations per frame)
     this.paper.updateUniforms(this.gpu.width, this.gpu.height, timeSec);
     this.textRenderer.updateUniforms(this.gpu.width, this.gpu.height, this.sim.mouseX, this.sim.mouseY, timeSec);
     this.leafRenderer.updateUniforms(this.gpu.width, this.gpu.height, timeSec);
@@ -216,13 +223,13 @@ class AutumnSketchbookApp {
       ]
     });
 
-    // Sub-pass 1: Paper Substrate & Procedural Fibers & User Pencil Marks
+    // Sub-pass 1: Cold-press Paper Substrate with Micro-Tooth & User Colored Pencil Marks
     this.paper.render(renderPass);
 
     // Sub-pass 2: "capture the moment" Colored Pencil Inscription
     this.textRenderer.render(renderPass);
 
-    // Sub-pass 3: Falling & Ground Autumn Leaves (Shadows + Colored Pencil Hatching)
+    // Sub-pass 3: Falling & Ground Autumn Leaves (Pencil Shadows + 2-Sided Botanical Hatching)
     this.leafRenderer.render(renderPass, packResult);
 
     renderPass.end();

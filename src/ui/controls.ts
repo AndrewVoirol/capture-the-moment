@@ -68,9 +68,13 @@ export class UIController {
     btnCapture.addEventListener('click', () => this.handleCapture());
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !e.repeat && this.elModal.classList.contains('hidden')) {
+      if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
-        this.handleCapture();
+        if (this.elModal.classList.contains('hidden')) {
+          this.handleCapture();
+        } else {
+          this.closeModal();
+        }
       } else if (e.key === 'm' || e.key === 'M') {
         this.sim.triggerEvokeWords();
         this.audio.playLeafRustle(0.9);
@@ -159,7 +163,7 @@ export class UIController {
   }
 
   public handleCapture() {
-    // 1. Play Shutter Sound & Flash
+    this.sim.isPaused = true;
     this.audio.playShutter();
 
     // Trigger visual flash
@@ -172,21 +176,7 @@ export class UIController {
       }, 500);
     }, 60);
 
-    // 2. Invoke Capture Callback
     this.onCaptureTrigger();
-  }
-
-  public showCapturedModal(sourceCanvas: HTMLCanvasElement) {
-    // Copy rendered WebGPU canvas content into captured artwork canvas
-    const target = this.elCapturedCanvas;
-    target.width = sourceCanvas.width;
-    target.height = sourceCanvas.height;
-    const ctx = target.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(sourceCanvas, 0, 0);
-    }
-
-    this.showCapturedModalDirect();
   }
 
   public showCapturedModalDirect() {
@@ -204,6 +194,7 @@ export class UIController {
 
   private closeModal() {
     this.elModal.classList.add('hidden');
+    this.sim.isPaused = false;
   }
 
   private downloadArtwork() {

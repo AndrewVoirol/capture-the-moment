@@ -2,9 +2,11 @@ import { GPUContextState } from './gpu-context';
 
 /**
  * TextRenderer: Colored Pencil Inscription of "capture the moment"
- * - Renders hand-lettered calligraphy with botanical flourishes
- * - Colored pencil tooth and graphite line simulation in WGSL
- * - Interactive hover burnishing / luminescence
+ * - Hand-lettered calligraphy rendered in multi-stage colored pencil
+ * - Botanical vine flourishes entwined with the letterforms
+ * - Fixed 2:1 aspect ratio preservation in WGSL (no stretching on any screen)
+ * - Stroke waypoint extraction for aerial leaf calligraphy
+ * - Interactive hover burnishing
  */
 export class TextRenderer {
   private device: GPUDevice;
@@ -34,7 +36,7 @@ export class TextRenderer {
     this.canvas = document.createElement('canvas');
     this.canvas.width = 2048;
     this.canvas.height = 1024;
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true })!;
 
     this.renderTextArt();
   }
@@ -49,52 +51,57 @@ export class TextRenderer {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Center coordinates
     const cx = w * 0.5;
     const cy = h * 0.48;
 
     ctx.save();
 
     // 1. Under-sketch: Light 2H graphite pencil guide lines & construction marks
-    ctx.strokeStyle = 'rgba(120, 100, 85, 0.18)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(120, 100, 85, 0.16)';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(cx - 650, cy + 85);
-    ctx.lineTo(cx + 650, cy + 85);
+    ctx.moveTo(cx - 700, cy + 70);
+    ctx.lineTo(cx + 700, cy + 70);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(120, 100, 85, 0.08)';
+    ctx.beginPath();
+    ctx.moveTo(cx - 600, cy - 65);
+    ctx.lineTo(cx + 600, cy - 65);
     ctx.stroke();
 
     // 2. Botanical flourishes & sketched autumn sprigs entwined with the words
-    this.drawBotanicalFlourish(ctx, cx - 480, cy - 20, -0.4);
-    this.drawBotanicalFlourish(ctx, cx + 480, cy + 50, 0.35);
+    this.drawBotanicalFlourish(ctx, cx - 520, cy - 10, -0.35);
+    this.drawBotanicalFlourish(ctx, cx + 520, cy + 45, 0.32);
 
     // 3. Main Calligraphic Lettering: Multi-layered colored pencil
-    // Layer A: Golden Amber Undertone (#d4ac0d / #b7950b)
-    ctx.font = 'italic 130px "Pinyon Script", "Caveat", cursive';
+    // Layer A: Luminous Golden Saffron Undertone
+    ctx.font = 'italic 125px "Pinyon Script", "Caveat", cursive';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    ctx.strokeStyle = 'rgba(212, 172, 13, 0.4)';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = 'rgba(212, 172, 13, 0.45)';
+    ctx.lineWidth = 6.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeText('capture the moment', cx - 1.5, cy - 1.5);
 
-    // Layer B: Burnt Sienna & Terracotta Core (#a04000 / #784212)
-    ctx.strokeStyle = 'rgba(160, 64, 0, 0.75)';
-    ctx.lineWidth = 4;
+    // Layer B: Warm Burnt Sienna & Terracotta Core
+    ctx.strokeStyle = 'rgba(160, 64, 0, 0.8)';
+    ctx.lineWidth = 3.8;
     ctx.strokeText('capture the moment', cx, cy);
 
-    ctx.fillStyle = 'rgba(120, 50, 10, 0.85)';
+    ctx.fillStyle = 'rgba(115, 45, 12, 0.88)';
     ctx.fillText('capture the moment', cx, cy);
 
     // Layer C: Dark Umber / Sepia contour & crisp pencil accent lines
-    ctx.strokeStyle = 'rgba(50, 30, 20, 0.6)';
-    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = 'rgba(55, 32, 20, 0.65)';
+    ctx.lineWidth = 1.6;
     ctx.strokeText('capture the moment', cx + 0.5, cy + 0.5);
 
     // Layer D: Small hand-penciled accent stars & wind swirls
-    this.drawWindSwirl(ctx, cx - 420, cy + 90, 80);
-    this.drawWindSwirl(ctx, cx + 420, cy - 80, -90);
+    this.drawWindSwirl(ctx, cx - 440, cy + 75, 75);
+    this.drawWindSwirl(ctx, cx + 440, cy - 75, -85);
 
     ctx.restore();
   }
@@ -106,16 +113,16 @@ export class TextRenderer {
 
     // Stem in sepia colored pencil
     ctx.strokeStyle = 'rgba(100, 60, 35, 0.65)';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.bezierCurveTo(40, -25, 80, -10, 120, -35);
     ctx.stroke();
 
-    // Delicate little maple/oak leaf buds along stem
-    this.drawMiniLeaf(ctx, 45, -20, -0.6, 'rgba(192, 57, 43, 0.75)');
-    this.drawMiniLeaf(ctx, 85, -18, 0.5, 'rgba(214, 137, 16, 0.75)');
-    this.drawMiniLeaf(ctx, 120, -35, -0.2, 'rgba(160, 64, 0, 0.8)');
+    // Delicate autumn leaf buds along stem
+    this.drawMiniLeaf(ctx, 45, -20, -0.6, 'rgba(192, 57, 43, 0.78)');
+    this.drawMiniLeaf(ctx, 85, -18, 0.5, 'rgba(214, 137, 16, 0.78)');
+    this.drawMiniLeaf(ctx, 120, -35, -0.2, 'rgba(160, 64, 0, 0.82)');
 
     ctx.restore();
   }
@@ -128,18 +135,18 @@ export class TextRenderer {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.quadraticCurveTo(12, -15, 25, 0);
-    ctx.quadraticCurveTo(12, 15, 0, 0);
+    ctx.quadraticCurveTo(12, -14, 24, 0);
+    ctx.quadraticCurveTo(12, 14, 0, 0);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(50, 25, 10, 0.5)';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(50, 25, 10, 0.55)';
+    ctx.lineWidth = 1.1;
     ctx.stroke();
 
     // Midrib
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(22, 0);
+    ctx.lineTo(21, 0);
     ctx.stroke();
 
     ctx.restore();
@@ -147,13 +154,77 @@ export class TextRenderer {
 
   private drawWindSwirl(ctx: CanvasRenderingContext2D, x: number, y: number, len: number) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(160, 110, 70, 0.35)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(160, 110, 70, 0.32)';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.bezierCurveTo(x + len * 0.4, y - 20, x + len * 0.7, y + 25, x + len, y);
+    ctx.bezierCurveTo(x + len * 0.4, y - 18, x + len * 0.7, y + 22, x + len, y);
     ctx.stroke();
     ctx.restore();
+  }
+
+  /**
+   * Extracts ordered stroke waypoints along the actual letters of "capture the moment"
+   * for leaf constellation formation
+   */
+  public extractStrokeWaypoints(numPoints: number = 120): Array<[number, number]> {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const imgData = this.ctx.getImageData(0, 0, w, h).data;
+
+    const yMin = Math.floor(h * 0.30);
+    const yMax = Math.floor(h * 0.65);
+    const xMin = Math.floor(w * 0.12);
+    const xMax = Math.floor(w * 0.88);
+
+    const candidates: Array<{ x: number; y: number }> = [];
+    for (let y = yMin; y < yMax; y += 3) {
+      for (let x = xMin; x < xMax; x += 3) {
+        const idx = (y * w + x) * 4;
+        const a = imgData[idx + 3];
+        if (a > 150) {
+          candidates.push({ x, y });
+        }
+      }
+    }
+
+    if (candidates.length === 0) {
+      const fallback: Array<[number, number]> = [];
+      for (let i = 0; i < numPoints; i++) {
+        const t = i / (numPoints - 1);
+        fallback.push([-0.65 + t * 1.3, 0.02 * Math.sin(t * Math.PI * 6)]);
+      }
+      return fallback;
+    }
+
+    // Sort by X (left to right across "capture the moment")
+    candidates.sort((a, b) => a.x - b.x);
+
+    const step = candidates.length / numPoints;
+    const waypoints: Array<[number, number]> = [];
+
+    for (let i = 0; i < numPoints; i++) {
+      const start = Math.floor(i * step);
+      const end = Math.floor((i + 1) * step);
+      let sumX = 0;
+      let sumY = 0;
+      let count = 0;
+      for (let j = start; j < end; j++) {
+        sumX += candidates[j].x;
+        sumY += candidates[j].y;
+        count++;
+      }
+      const avgX = sumX / count;
+      const avgY = sumY / count;
+
+      // NDC coordinates: [-1, 1], centered at (0, 0)
+      const ndcX = (avgX / w) * 2.0 - 1.0;
+      const ndcY = -((avgY / h) * 2.0 - 1.0);
+
+      waypoints.push([ndcX, ndcY]);
+    }
+
+    return waypoints;
   }
 
   private initTextTexture() {
@@ -182,8 +253,6 @@ export class TextRenderer {
   }
 
   private initUniforms() {
-    // Uniforms:
-    // resolution: vec2<f32>, mousePos: vec2<f32>, hoverDist: f32, time: f32, padding: vec2<f32>
     this.uniformBuffer = this.device.createBuffer({
       size: 32,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -222,7 +291,6 @@ export class TextRenderer {
           return out;
         }
 
-        // Pseudo-random noise for tooth catch
         fn hash21(p: vec2<f32>) -> f32 {
           var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
           p3 += dot(p3, p3.yzx + 33.33);
@@ -231,27 +299,39 @@ export class TextRenderer {
 
         @fragment
         fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-          let uv = in.uv;
-          let textSample = textureSample(textTex, textSamp, uv);
+          // Aspect Ratio Preservation (Texture is 2048x1024, 2.0 aspect)
+          let windowAspect = uniforms.resolution.x / uniforms.resolution.y;
+          let targetAspect = 2.0;
 
+          var uv = in.uv;
+          if (windowAspect > targetAspect) {
+            let scale = targetAspect / windowAspect;
+            uv.x = (in.uv.x - 0.5) / scale + 0.5;
+          } else {
+            let scale = windowAspect / targetAspect;
+            uv.y = (in.uv.y - 0.5) / scale + 0.5;
+          }
+
+          if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+            discard;
+          }
+
+          let textSample = textureSample(textTex, textSamp, uv);
           if (textSample.a < 0.005) {
             discard;
           }
 
           // Paper tooth modulation
-          let pixelPos = uv * uniforms.resolution;
+          let pixelPos = in.uv * uniforms.resolution;
           let toothNoise = hash21(floor(pixelPos * 0.45));
           let toothMultiplier = mix(0.72, 1.18, toothNoise);
 
-          // Interactive hover burnishing:
-          // If mouse is near the inscription, add warm golden colored pencil shimmer
-          let aspect = uniforms.resolution.x / uniforms.resolution.y;
+          // Interactive hover burnishing
           let normMouse = (uniforms.mousePos + 1.0) * 0.5;
-          let dMouse = length((uv - normMouse) * vec2<f32>(aspect, 1.0));
+          let dMouse = length((in.uv - normMouse) * vec2<f32>(windowAspect, 1.0));
           let hoverShimmer = smoothstep(0.28, 0.02, dMouse);
 
           var col = textSample.rgb;
-          // Burnish with warm amber/gold when hovered
           let goldShimmer = vec3<f32>(0.92, 0.72, 0.22);
           col = mix(col, goldShimmer, hoverShimmer * 0.45);
 

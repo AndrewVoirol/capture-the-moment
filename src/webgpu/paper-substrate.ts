@@ -31,7 +31,7 @@ export class PaperSubstrate {
     this.pencilCanvas = document.createElement('canvas');
     this.pencilCanvas.width = 1024;
     this.pencilCanvas.height = 1024;
-    this.pencilCtx = this.pencilCanvas.getContext('2d')!;
+    this.pencilCtx = this.pencilCanvas.getContext('2d', { willReadFrequently: true })!;
     // Clear to transparent
     this.pencilCtx.clearRect(0, 0, 1024, 1024);
   }

@@ -1,11 +1,11 @@
 /**
  * 3D Botanical Leaf Geometries for WebGPU Instancing
- * Refined smooth organic meshes:
+ * Generates smooth organic meshes with calculated 3D normals, cupping, and curl:
  * 0: Japanese Maple (7 radiating palmate lobes)
- * 1: Sugar Maple (5 broad lobes)
- * 2: Oak (sinuous undulating rounded lobes)
- * 3: Ginkgo (delicate fan with central split)
- * 4: Birch / Aspen (fluttering spade)
+ * 1: Sugar Maple (5 broad lobes with lateral notches)
+ * 2: Oak (sinuous undulating rounded lobes with continuous quad strip)
+ * 3: Ginkgo (delicate fan with radial ribbing & central notch)
+ * 4: Birch / Aspen (fluttering cupped spade)
  */
 
 export interface LeafVertex {
@@ -77,6 +77,50 @@ export class LeafGeometryGenerator {
     };
   }
 
+  /**
+   * Recomputes smooth vertex normals from triangle cross-products
+   */
+  private static recomputeNormals(verts: LeafVertex[], indices: number[]) {
+    const normalAcc: Array<[number, number, number]> = verts.map(() => [0, 0, 0]);
+
+    for (let i = 0; i < indices.length; i += 3) {
+      const i0 = indices[i];
+      const i1 = indices[i + 1];
+      const i2 = indices[i + 2];
+
+      const p0 = verts[i0].pos;
+      const p1 = verts[i1].pos;
+      const p2 = verts[i2].pos;
+
+      const ax = p1[0] - p0[0];
+      const ay = p1[1] - p0[1];
+      const az = p1[2] - p0[2];
+
+      const bx = p2[0] - p0[0];
+      const by = p2[1] - p0[1];
+      const bz = p2[2] - p0[2];
+
+      // Cross product
+      const nx = ay * bz - az * by;
+      const ny = az * bx - ax * bz;
+      const nz = ax * by - ay * bx;
+
+      normalAcc[i0][0] += nx; normalAcc[i0][1] += ny; normalAcc[i0][2] += nz;
+      normalAcc[i1][0] += nx; normalAcc[i1][1] += ny; normalAcc[i1][2] += nz;
+      normalAcc[i2][0] += nx; normalAcc[i2][1] += ny; normalAcc[i2][2] += nz;
+    }
+
+    for (let i = 0; i < verts.length; i++) {
+      const n = normalAcc[i];
+      const len = Math.hypot(n[0], n[1], n[2]);
+      if (len > 0.0001) {
+        verts[i].norm = [n[0] / len, n[1] / len, n[2] / len];
+      } else {
+        verts[i].norm = [0, 0, 1];
+      }
+    }
+  }
+
   private static packVertices(verts: LeafVertex[]): Float32Array {
     const arr = new Float32Array(verts.length * 12);
     for (let i = 0; i < verts.length; i++) {
@@ -99,23 +143,36 @@ export class LeafGeometryGenerator {
   }
 
   /**
-   * Species 0: Japanese Maple (7 palmate lobes with serrated taper)
+   * Species 0: Japanese Maple (Acer palmatum)
+   * 7 radiating slender palmate lobes with central stem node & petiole
    */
   private static createJapaneseMapleMesh(): MeshData {
     const verts: LeafVertex[] = [];
     const indices: number[] = [];
     const speciesId = 0;
 
+    // Petiole base
+    const petioleIdx = verts.length;
+    verts.push({
+      pos: [0, -0.65, 0.0],
+      norm: [0, 0, 1],
+      uv: [0.5, 0.0],
+      feature: [0.3, 0.0, 0.0, speciesId]
+    });
+
+    // Central leaf node
     const centerIdx = verts.length;
     verts.push({
-      pos: [0, -0.15, 0.05],
+      pos: [0, -0.15, 0.04],
       norm: [0, 0, 1],
       uv: [0.5, 0.35],
       feature: [0.8, 0.0, 0.0, speciesId]
     });
 
-    const lobeAngles = [-1.65, -1.15, -0.55, 0.0, 0.55, 1.15, 1.65];
-    const lobeLengths = [0.48, 0.72, 0.90, 1.05, 0.90, 0.72, 0.48];
+    // Connect petiole
+    // 7 palmate lobes
+    const lobeAngles = [-1.55, -1.05, -0.52, 0.0, 0.52, 1.05, 1.55];
+    const lobeLengths = [0.52, 0.76, 0.94, 1.08, 0.94, 0.76, 0.52];
 
     let prevWingRight = -1;
 
@@ -124,7 +181,8 @@ export class LeafGeometryGenerator {
       const len = lobeLengths[l];
       const tipX = Math.sin(ang) * len;
       const tipY = -0.15 + Math.cos(ang) * len;
-      const curlZ = Math.sin(len * 2.2) * 0.07;
+      // 3D curl at tip
+      const curlZ = Math.sin(len * 2.5) * 0.06;
 
       const tipIdx = verts.length;
       verts.push({
@@ -134,33 +192,43 @@ export class LeafGeometryGenerator {
         feature: [0.0, 0.0, ang, speciesId]
       });
 
+      const leftAng = ang - 0.14;
+      const flankLen = len * 0.56;
       const flankL = verts.length;
-      const leftAng = ang - 0.15;
-      const flankLen = len * 0.58;
       verts.push({
-        pos: [Math.sin(leftAng) * flankLen, -0.15 + Math.cos(leftAng) * flankLen, curlZ * 0.5],
+        pos: [Math.sin(leftAng) * flankLen, -0.15 + Math.cos(leftAng) * flankLen, curlZ * 0.4 + 0.02],
         norm: [0, 0, 1],
         uv: [Math.sin(leftAng) * flankLen * 0.45 + 0.5, (-0.15 + Math.cos(leftAng) * flankLen) * 0.45 + 0.5],
         feature: [0.08, 0.12, ang, speciesId]
       });
 
+      const rightAng = ang + 0.14;
       const flankR = verts.length;
-      const rightAng = ang + 0.15;
       verts.push({
-        pos: [Math.sin(rightAng) * flankLen, -0.15 + Math.cos(rightAng) * flankLen, curlZ * 0.5],
+        pos: [Math.sin(rightAng) * flankLen, -0.15 + Math.cos(rightAng) * flankLen, curlZ * 0.4 + 0.02],
         norm: [0, 0, 1],
         uv: [Math.sin(rightAng) * flankLen * 0.45 + 0.5, (-0.15 + Math.cos(rightAng) * flankLen) * 0.45 + 0.5],
         feature: [0.08, 0.12, ang, speciesId]
       });
 
+      // Triangles for lobe
       indices.push(centerIdx, flankL, tipIdx);
       indices.push(centerIdx, tipIdx, flankR);
 
+      // Sinus webbing connecting to previous lobe
       if (prevWingRight !== -1) {
         indices.push(centerIdx, prevWingRight, flankL);
       }
       prevWingRight = flankR;
     }
+
+    // Connect petiole stem
+    const firstFlankL = 2 + 1; // lobe 0 flankL
+    const lastFlankR = verts.length - 1; // lobe 6 flankR
+    indices.push(petioleIdx, firstFlankL, centerIdx);
+    indices.push(petioleIdx, centerIdx, lastFlankR);
+
+    this.recomputeNormals(verts, indices);
 
     return {
       vertices: this.packVertices(verts),
@@ -172,23 +240,33 @@ export class LeafGeometryGenerator {
   }
 
   /**
-   * Species 1: Sugar Maple (5 broad notched lobes)
+   * Species 1: Sugar Maple (Acer saccharum)
+   * 5 broad lobes with lateral notched wings and cupped blade
    */
   private static createSugarMapleMesh(): MeshData {
     const verts: LeafVertex[] = [];
     const indices: number[] = [];
     const speciesId = 1;
 
+    // Petiole base
+    const petioleIdx = verts.length;
+    verts.push({
+      pos: [0, -0.65, 0.0],
+      norm: [0, 0, 1],
+      uv: [0.5, 0.05],
+      feature: [0.3, 0.0, 0.0, speciesId]
+    });
+
     const centerIdx = verts.length;
     verts.push({
-      pos: [0, -0.1, 0.06],
+      pos: [0, -0.1, 0.05],
       norm: [0, 0, 1],
-      uv: [0.5, 0.35],
+      uv: [0.5, 0.38],
       feature: [0.8, 0.0, 0.0, speciesId]
     });
 
-    const lobeAngles = [-1.3, -0.65, 0.0, 0.65, 1.3];
-    const lobeLengths = [0.65, 0.95, 1.10, 0.95, 0.65];
+    const lobeAngles = [-1.25, -0.62, 0.0, 0.62, 1.25];
+    const lobeLengths = [0.68, 0.98, 1.15, 0.98, 0.68];
 
     let prevWingRight = -1;
 
@@ -197,7 +275,7 @@ export class LeafGeometryGenerator {
       const len = lobeLengths[l];
       const tipX = Math.sin(ang) * len;
       const tipY = -0.1 + Math.cos(ang) * len;
-      const curlZ = Math.sin(ang * 1.5) * 0.06;
+      const curlZ = Math.sin(ang * 1.5) * 0.05 + Math.sin(len * 2.0) * 0.04;
 
       const tipIdx = verts.length;
       verts.push({
@@ -208,18 +286,20 @@ export class LeafGeometryGenerator {
       });
 
       const wingL = verts.length;
+      const wlAng = ang - 0.22;
       verts.push({
-        pos: [Math.sin(ang - 0.22) * len * 0.62, -0.1 + Math.cos(ang - 0.22) * len * 0.62, curlZ * 0.5],
+        pos: [Math.sin(wlAng) * len * 0.62, -0.1 + Math.cos(wlAng) * len * 0.62, curlZ * 0.5 + 0.02],
         norm: [0, 0, 1],
-        uv: [0.5 + Math.sin(ang - 0.22) * len * 0.25, 0.5 + Math.cos(ang - 0.22) * len * 0.25],
+        uv: [0.5 + Math.sin(wlAng) * len * 0.28, 0.4 + Math.cos(wlAng) * len * 0.28],
         feature: [0.05, 0.18, ang, speciesId]
       });
 
       const wingR = verts.length;
+      const wrAng = ang + 0.22;
       verts.push({
-        pos: [Math.sin(ang + 0.22) * len * 0.62, -0.1 + Math.cos(ang + 0.22) * len * 0.62, curlZ * 0.5],
+        pos: [Math.sin(wrAng) * len * 0.62, -0.1 + Math.cos(wrAng) * len * 0.62, curlZ * 0.5 + 0.02],
         norm: [0, 0, 1],
-        uv: [0.5 + Math.sin(ang + 0.22) * len * 0.25, 0.5 + Math.cos(ang + 0.22) * len * 0.25],
+        uv: [0.5 + Math.sin(wrAng) * len * 0.28, 0.4 + Math.cos(wrAng) * len * 0.28],
         feature: [0.05, 0.18, ang, speciesId]
       });
 
@@ -232,6 +312,14 @@ export class LeafGeometryGenerator {
       prevWingRight = wingR;
     }
 
+    // Connect petiole to outer lobe wings
+    const firstWingL = 2 + 1; // lobe 0 wingL
+    const lastWingR = verts.length - 1; // lobe 4 wingR
+    indices.push(petioleIdx, firstWingL, centerIdx);
+    indices.push(petioleIdx, centerIdx, lastWingR);
+
+    this.recomputeNormals(verts, indices);
+
     return {
       vertices: this.packVertices(verts),
       indices: new Uint16Array(indices),
@@ -242,66 +330,80 @@ export class LeafGeometryGenerator {
   }
 
   /**
-   * Species 2: Oak (smooth undulating rounded lobes with central spine)
+   * Species 2: Oak (Quercus alba)
+   * Continuous smooth quad-strip with sinuous undulating rounded lobes
    */
   private static createOakMesh(): MeshData {
     const verts: LeafVertex[] = [];
     const indices: number[] = [];
     const speciesId = 2;
 
-    const spineSegments = 12;
-    const spineIndices: number[] = [];
+    const spineSegments = 16;
 
-    // Central spine
+    // Build structured grid: 3 vertices per segment (Left Margin, Spine, Right Margin)
     for (let i = 0; i <= spineSegments; i++) {
       const t = i / spineSegments;
       const y = -0.75 + t * 1.5;
-      const curlZ = Math.sin(t * Math.PI) * 0.08;
-      spineIndices.push(verts.length);
+
+      // Base width envelope (tapers smoothly at petiole base and apex tip)
+      const baseEnvelope = Math.pow(Math.sin(t * Math.PI), 0.65);
+      // 3 pairs of rounded undulating lobes
+      const lobeWave = 0.36 + 0.16 * Math.sin((t * 3.5 - 0.2) * Math.PI * 2.0);
+      const width = Math.max(0.01, baseEnvelope * lobeWave);
+
+      // Spine longitudinal curl
+      const spineCurlZ = Math.sin(t * Math.PI) * 0.07;
+      // Lateral trough cupping
+      const cupOffsetZ = 0.04 * (width / 0.5);
+
+      // 1. Left Margin vertex
+      const leftIdx = verts.length;
       verts.push({
-        pos: [0, y, curlZ],
+        pos: [-width, y, spineCurlZ + cupOffsetZ],
+        norm: [0, 0, 1],
+        uv: [0.5 - width * 0.5, t],
+        feature: [0.0, width, -1.3, speciesId]
+      });
+
+      // 2. Center Spine vertex
+      const spineIdx = verts.length;
+      verts.push({
+        pos: [0, y, spineCurlZ],
         norm: [0, 0, 1],
         uv: [0.5, t],
         feature: [0.8, 0.0, 0.0, speciesId]
       });
-    }
 
-    // Smooth sinusoidal undulating margins (3 rounded lobe waves)
-    for (let i = 1; i < spineSegments; i++) {
-      const t = i / spineSegments;
-      const y = -0.75 + t * 1.5;
-
-      // Smooth undulating lobe envelope
-      const baseEnvelope = Math.pow(Math.sin(t * Math.PI), 0.55);
-      const lobeWave = 0.32 + 0.18 * Math.cos((t * 3.0 - 0.5) * Math.PI * 2.0);
-      const width = baseEnvelope * lobeWave;
-      const curlZ = Math.sin(t * Math.PI) * 0.06;
-
-      const leftIdx = verts.length;
-      verts.push({
-        pos: [-width, y, curlZ * 0.5],
-        norm: [-0.2, 0, 0.98],
-        uv: [0.5 - width * 0.5, t],
-        feature: [0.0, width, -1.57, speciesId]
-      });
-
+      // 3. Right Margin vertex
       const rightIdx = verts.length;
       verts.push({
-        pos: [width, y, curlZ * 0.5],
-        norm: [0.2, 0, 0.98],
+        pos: [width, y, spineCurlZ + cupOffsetZ],
+        norm: [0, 0, 1],
         uv: [0.5 + width * 0.5, t],
-        feature: [0.0, width, 1.57, speciesId]
+        feature: [0.0, width, 1.3, speciesId]
       });
 
-      const currSpine = spineIndices[i];
-      const prevSpine = spineIndices[i - 1];
-      const nextSpine = spineIndices[i + 1];
+      // Triangulate between current segment i and previous segment i - 1
+      if (i > 0) {
+        const prevLeft = (i - 1) * 3 + 0;
+        const prevSpine = (i - 1) * 3 + 1;
+        const prevRight = (i - 1) * 3 + 2;
 
-      indices.push(prevSpine, leftIdx, currSpine);
-      indices.push(currSpine, leftIdx, nextSpine);
-      indices.push(prevSpine, currSpine, rightIdx);
-      indices.push(currSpine, nextSpine, rightIdx);
+        const currLeft = leftIdx;
+        const currSpine = spineIdx;
+        const currRight = rightIdx;
+
+        // Left quad: (prevSpine, prevLeft, currLeft, currSpine)
+        indices.push(prevSpine, prevLeft, currLeft);
+        indices.push(prevSpine, currLeft, currSpine);
+
+        // Right quad: (prevSpine, currSpine, currRight, prevRight)
+        indices.push(prevSpine, currRight, prevRight);
+        indices.push(prevSpine, currSpine, currRight);
+      }
     }
+
+    this.recomputeNormals(verts, indices);
 
     return {
       vertices: this.packVertices(verts),
@@ -313,49 +415,86 @@ export class LeafGeometryGenerator {
   }
 
   /**
-   * Species 3: Ginkgo (delicate fan with central scallop split)
+   * Species 3: Ginkgo (Ginkgo biloba)
+   * Delicate fan with radial ribs, intermediate ring for cupping, and central split
    */
   private static createGinkgoMesh(): MeshData {
     const verts: LeafVertex[] = [];
     const indices: number[] = [];
     const speciesId = 3;
 
+    // Petiole base
     const petioleIdx = verts.length;
     verts.push({
-      pos: [0, -0.65, 0.02],
+      pos: [0, -0.65, 0.0],
       norm: [0, 0, 1],
       uv: [0.5, 0.05],
       feature: [0.7, 0.0, 0.0, speciesId]
     });
 
-    const segments = 20;
+    const segments = 22;
     const fanSpan = Math.PI * 0.82;
     const startAngle = -fanSpan / 2;
+
+    const midRingIndices: number[] = [];
     const rimIndices: number[] = [];
 
+    // Intermediate ring at r = 0.42 (adds 3D cupping curvature)
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
       const angle = startAngle + t * fanSpan;
-      // Central scallop notch
-      const notch = 1.0 - Math.exp(-Math.pow((t - 0.5) * 8.0, 2)) * 0.25;
-      const radius = 0.82 * notch;
+      const radius = 0.42;
+      const x = Math.sin(angle) * radius;
+      const y = -0.45 + Math.cos(angle) * radius;
+      const curlZ = 0.025 * Math.cos(angle * 1.5);
+
+      midRingIndices.push(verts.length);
+      verts.push({
+        pos: [x, y, curlZ],
+        norm: [0, 0, 1],
+        uv: [x * 0.45 + 0.5, (y + 0.5) * 0.45 + 0.1],
+        feature: [0.4, radius, angle, speciesId]
+      });
+    }
+
+    // Outer rim with central scallop split
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const angle = startAngle + t * fanSpan;
+      // Central scallop notch at t = 0.5
+      const notch = 1.0 - Math.exp(-Math.pow((t - 0.5) * 9.0, 2)) * 0.22;
+      const radius = 0.85 * notch;
 
       const x = Math.sin(angle) * radius;
-      const y = -0.4 + Math.cos(angle) * radius;
-      const curlZ = Math.sin(angle * 2.0) * 0.05;
+      const y = -0.45 + Math.cos(angle) * radius;
+      const curlZ = 0.05 * Math.sin(angle * 2.0);
 
       rimIndices.push(verts.length);
       verts.push({
         pos: [x, y, curlZ],
         norm: [0, 0, 1],
-        uv: [x * 0.45 + 0.5, y * 0.45 + 0.5],
+        uv: [x * 0.45 + 0.5, (y + 0.5) * 0.45 + 0.1],
         feature: [0.0, radius, angle, speciesId]
       });
     }
 
+    // Inner fan: petiole to mid ring
     for (let i = 0; i < segments; i++) {
-      indices.push(petioleIdx, rimIndices[i], rimIndices[i + 1]);
+      indices.push(petioleIdx, midRingIndices[i], midRingIndices[i + 1]);
     }
+
+    // Outer fan ring: mid ring to rim ring
+    for (let i = 0; i < segments; i++) {
+      const m0 = midRingIndices[i];
+      const m1 = midRingIndices[i + 1];
+      const r0 = rimIndices[i];
+      const r1 = rimIndices[i + 1];
+
+      indices.push(m0, r0, r1);
+      indices.push(m0, r1, m1);
+    }
+
+    this.recomputeNormals(verts, indices);
 
     return {
       vertices: this.packVertices(verts),
@@ -367,75 +506,76 @@ export class LeafGeometryGenerator {
   }
 
   /**
-   * Species 4: Birch / Aspen (fluttering spade)
+   * Species 4: Birch / Aspen (Betula pendula)
+   * Fluttering spade with spine segments, serrated contour, and cupped blade
    */
   private static createBirchMesh(): MeshData {
     const verts: LeafVertex[] = [];
     const indices: number[] = [];
     const speciesId = 4;
 
-    const baseIdx = verts.length;
-    verts.push({
-      pos: [0, -0.65, 0.0],
-      norm: [0, 0, 1],
-      uv: [0.5, 0.08],
-      feature: [0.2, 0.0, 0.0, speciesId]
-    });
+    const segments = 12;
 
-    const centerIdx = verts.length;
-    verts.push({
-      pos: [0, -0.1, 0.07],
-      norm: [0, 0, 1],
-      uv: [0.5, 0.45],
-      feature: [0.8, 0.0, 0.0, speciesId]
-    });
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const y = -0.65 + t * 1.4;
 
-    const tipIdx = verts.length;
-    verts.push({
-      pos: [0, 0.72, -0.04],
-      norm: [0, 0, 1],
-      uv: [0.5, 0.95],
-      feature: [0.0, 0.0, 0.0, speciesId]
-    });
+      // Birch spade width envelope (broad heart at bottom third, tapering to sharp apex)
+      const baseWidth = Math.pow(Math.sin(t * Math.PI), 0.6) * (1.1 - t * 0.55);
+      // Fine margin serrations
+      const serration = 1.0 + 0.05 * Math.sin(t * Math.PI * 18.0);
+      const width = Math.max(0.01, baseWidth * serration * 0.48);
 
-    const leftCheek = verts.length;
-    verts.push({
-      pos: [-0.44, -0.16, 0.03],
-      norm: [-0.3, 0, 0.95],
-      uv: [0.1, 0.4],
-      feature: [0.0, 0.35, -1.5, speciesId]
-    });
+      const curlZ = Math.sin(t * Math.PI) * 0.05;
+      const cupZ = 0.03 * (width / 0.4);
 
-    const rightCheek = verts.length;
-    verts.push({
-      pos: [0.44, -0.16, 0.03],
-      norm: [0.3, 0, 0.95],
-      uv: [0.9, 0.4],
-      feature: [0.0, 0.35, 1.5, speciesId]
-    });
+      // Left margin
+      const leftIdx = verts.length;
+      verts.push({
+        pos: [-width, y, curlZ + cupZ],
+        norm: [0, 0, 1],
+        uv: [0.5 - width * 0.5, t],
+        feature: [0.0, width, -1.2, speciesId]
+      });
 
-    const leftShoulder = verts.length;
-    verts.push({
-      pos: [-0.3, 0.32, 0.04],
-      norm: [-0.2, 0.2, 0.95],
-      uv: [0.22, 0.7],
-      feature: [0.0, 0.25, -1.0, speciesId]
-    });
+      // Spine
+      const spineIdx = verts.length;
+      verts.push({
+        pos: [0, y, curlZ],
+        norm: [0, 0, 1],
+        uv: [0.5, t],
+        feature: [0.8, 0.0, 0.0, speciesId]
+      });
 
-    const rightShoulder = verts.length;
-    verts.push({
-      pos: [0.3, 0.32, 0.04],
-      norm: [0.2, 0.2, 0.95],
-      uv: [0.78, 0.7],
-      feature: [0.0, 0.25, 1.0, speciesId]
-    });
+      // Right margin
+      const rightIdx = verts.length;
+      verts.push({
+        pos: [width, y, curlZ + cupZ],
+        norm: [0, 0, 1],
+        uv: [0.5 + width * 0.5, t],
+        feature: [0.0, width, 1.2, speciesId]
+      });
 
-    indices.push(baseIdx, leftCheek, centerIdx);
-    indices.push(baseIdx, centerIdx, rightCheek);
-    indices.push(centerIdx, leftCheek, leftShoulder);
-    indices.push(centerIdx, leftShoulder, tipIdx);
-    indices.push(centerIdx, tipIdx, rightShoulder);
-    indices.push(centerIdx, rightShoulder, rightCheek);
+      if (i > 0) {
+        const prevLeft = (i - 1) * 3 + 0;
+        const prevSpine = (i - 1) * 3 + 1;
+        const prevRight = (i - 1) * 3 + 2;
+
+        const currLeft = leftIdx;
+        const currSpine = spineIdx;
+        const currRight = rightIdx;
+
+        // Left quad
+        indices.push(prevSpine, prevLeft, currLeft);
+        indices.push(prevSpine, currLeft, currSpine);
+
+        // Right quad
+        indices.push(prevSpine, currRight, prevRight);
+        indices.push(prevSpine, currSpine, currRight);
+      }
+    }
+
+    this.recomputeNormals(verts, indices);
 
     return {
       vertices: this.packVertices(verts),
