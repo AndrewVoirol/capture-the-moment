@@ -96,6 +96,7 @@ class AutumnSketchbookApp {
         },
         onCoStarSpeakingChange: (speaking) => {
           this.captionOverlay.setCoStarSpeaking(speaking);
+          if (this.ui) this.ui.setCoStarSpeaking(speaking);
         },
         onToolExecuted: (name, desc) => {
           this.captionOverlay.showActionToast(name, desc);
@@ -117,7 +118,59 @@ class AutumnSketchbookApp {
         onVoiceChange: (voice) => this.liveClient.setVoice(voice),
         onToggleRecord: () => this.toggleRecordDemo(),
         onToggleMicMute: () => this.liveClient.toggleMicMute(),
-        onSendPrompt: (prompt) => this.liveClient.sendUserText(prompt)
+        onSendPrompt: (prompt) => {
+          if (this.isCoStarConnected) {
+            this.liveClient.sendUserText(prompt);
+          } else {
+            this.captionOverlay.showUserTranscript(prompt);
+            const promptLower = prompt.toLowerCase();
+            let actionName = 'Folio Action';
+            let actionDesc = '';
+
+            if (promptLower.includes('gold')) {
+              actionName = 'Palette: Autumn Gold';
+              actionDesc = 'Amber ochre wax tones selected';
+            } else if (promptLower.includes('gust') || promptLower.includes('wind')) {
+              actionName = 'October Gust';
+              actionDesc = 'Brisk breeze lifting dry leaves';
+            } else if (promptLower.includes('flurry')) {
+              actionName = 'Autumn Flurry';
+              actionDesc = 'Fresh flurry of foliage released';
+            } else if (promptLower.includes('sketch a leaf')) {
+              actionName = 'Botanical Sketch';
+              actionDesc = 'Hand-drawn leaf contour added';
+            } else if (promptLower.includes('sign')) {
+              actionName = 'Folio Signature';
+              actionDesc = 'Archival signature flourish penned';
+            } else if (promptLower.includes('snap') || promptLower.includes('photo')) {
+              actionName = 'Capture Moment';
+              actionDesc = 'Archival folio moment recorded';
+            }
+
+            if (actionDesc) {
+              this.captionOverlay.showActionToast(actionName, actionDesc);
+            }
+
+            // Witty Alastair offline voice response simulation
+            setTimeout(() => {
+              const banter: Record<string, string> = {
+                'Change palette to Autumn Gold': 'Switching to radiant amber ochre... Notice how the warm wax layers catch the paper tooth.',
+                'Summon a sudden gust of wind': 'A brisk October gust sweeps the folio! Watch the dry leaves tumble and lift.',
+                'Release a flurry of leaves': 'Releasing a shower of crisp autumn leaves across the cold-press parchment.',
+                'Sketch a leaf in colored pencil': 'Tracing a delicate botanical contour in wax pencil.',
+                'Sign your name flourish': 'Adding our archival flourish to complete the folio study.',
+                'Snap a photograph': 'Freezing this fleeting moment on archival paper.'
+              };
+              const reply = banter[prompt] || `Command "${prompt}" acknowledged. Connect Co-Star to enable live voice conversation.`;
+              this.captionOverlay.showCoStarTranscript(reply);
+              if (this.ui) this.ui.setCoStarSpeaking(true);
+              this.audio.playPencilScratch();
+              setTimeout(() => {
+                if (this.ui) this.ui.setCoStarSpeaking(false);
+              }, 2400);
+            }, 350);
+          }
+        }
       }
     );
 
@@ -212,16 +265,10 @@ class AutumnSketchbookApp {
   }
 
   private getPencilColor(): string {
-    switch (this.sim.currentPalette) {
-      case 1:
-        return 'rgba(212, 172, 13, 0.65)';
-      case 2:
-        return 'rgba(120, 66, 18, 0.7)';
-      case 3:
-        return 'rgba(91, 44, 111, 0.65)';
-      default:
-        return 'rgba(192, 57, 43, 0.75)';
+    if (this.ui) {
+      return this.ui.getPencilColorForCurrentPalette();
     }
+    return 'oklch(0.53 0.21 28 / 0.85)';
   }
 
   private setupResize() {

@@ -164,4 +164,35 @@ export class SketchAudio {
     noise.start(t);
     noise.stop(t + 0.1);
   }
+
+  /**
+   * Soft Eraser Sweep (Clearing pencil marks from paper)
+   */
+  public playEraserSweep() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx || !this.noiseBuffer) return;
+
+    const t = this.ctx.currentTime;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this.noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1400, t);
+    filter.frequency.exponentialRampToValueAtTime(500, t + 0.35);
+    filter.Q.setValueAtTime(1.5, t);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    noise.start(t);
+    noise.stop(t + 0.4);
+  }
 }

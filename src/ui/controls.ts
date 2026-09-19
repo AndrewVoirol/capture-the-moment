@@ -42,6 +42,17 @@ export class UIController {
   private elBtnMicMute!: HTMLElement;
   private elQuickPrompts!: HTMLElement;
 
+  // Sidebar & Studio Rail controls
+  private elSidebar!: HTMLElement;
+  private elBtnToggleSidebar!: HTMLElement | null;
+  private elBtnCollapseCostar!: HTMLElement | null;
+  private elBtnClearPencil!: HTMLElement | null;
+  private elBtnSidebarKey!: HTMLElement | null;
+  private elCostarLiveDot!: HTMLElement | null;
+  private elCostarSessionBadge!: HTMLElement | null;
+  private elCostarWave!: HTMLElement | null;
+  public isSidebarOpen: boolean = true;
+
   // Recorder elements
   private elBtnRecord!: HTMLElement;
   private elRecLabel!: HTMLElement;
@@ -88,6 +99,10 @@ export class UIController {
 
     this.bindElements();
     this.setupEventListeners();
+
+    if (typeof window !== 'undefined' && window.innerWidth <= 880) {
+      this.toggleSidebar(false);
+    }
   }
 
   private bindElements() {
@@ -105,6 +120,16 @@ export class UIController {
     this.elBtnDownload = document.getElementById('btn-download')!;
     this.elArtMetaDate = document.getElementById('art-meta-date')!;
     this.elBtnSound = document.getElementById('btn-toggle-sound')!;
+
+    // Co-Star Sidebar & Studio Rail
+    this.elSidebar = document.getElementById('costar-sidebar')!;
+    this.elBtnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+    this.elBtnCollapseCostar = document.getElementById('btn-collapse-costar');
+    this.elBtnClearPencil = document.getElementById('btn-clear-pencil');
+    this.elBtnSidebarKey = document.getElementById('btn-sidebar-key');
+    this.elCostarLiveDot = document.getElementById('costar-live-dot');
+    this.elCostarSessionBadge = document.getElementById('costar-session-badge');
+    this.elCostarWave = document.getElementById('costar-sidebar-wave');
 
     // Co-Star
     this.elBtnCoStar = document.getElementById('btn-toggle-costar')!;
@@ -132,12 +157,18 @@ export class UIController {
   }
 
   private setupEventListeners() {
-    // 1. Capture Button & Keybinding
+    // 1. Capture Button & Keybindings
     const btnCapture = document.getElementById('btn-capture')!;
     btnCapture.addEventListener('click', () => this.handleCapture());
 
     window.addEventListener('keydown', (e) => {
+      // Don't intercept typing in input elements
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        return;
+      }
+
       this.dismissHint();
+
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault();
         if (this.elModal.classList.contains('hidden')) {
@@ -145,29 +176,76 @@ export class UIController {
         } else {
           this.closeModal();
         }
-      } else if (e.key === 'm' || e.key === 'M') {
+      } else if (e.code === 'Tab' && !e.repeat) {
+        e.preventDefault();
+        this.toggleSidebar();
+      } else if (e.key === '1') {
+        this.selectTool('breeze');
+      } else if (e.key === '2') {
+        this.selectTool('pencil');
+      } else if (e.key === '3') {
+        this.selectTool('gust');
+      } else if (e.key === 'g' || e.key === 'G') {
+        this.triggerGust(1.4);
+      } else if (e.key === 'f' || e.key === 'F') {
+        this.spawnFlurry(45);
+      } else if (e.key === 'm' || e.key === 'M' || e.key === 'e' || e.key === 'E') {
         this.sim.triggerEvokeWords();
         this.audio.playLeafRustle(0.9);
       } else if (e.key === 'c' || e.key === 'C') {
         this.paper.clearPencilStrokes();
+        this.audio.playEraserSweep();
+      } else if (e.key === 'v' || e.key === 'V') {
+        this.toggleViewfinder();
+      } else if (e.key === 's' || e.key === 'S') {
+        this.toggleSound();
       } else if (e.code === 'Escape') {
         this.closeModal();
+        this.hideApiKeyModal();
       }
     });
 
-    // 2. Tools
+    // 2. Sidebar Toggle Buttons
+    if (this.elBtnToggleSidebar) {
+      this.elBtnToggleSidebar.addEventListener('click', () => {
+        this.dismissHint();
+        this.toggleSidebar();
+      });
+    }
+
+    if (this.elBtnCollapseCostar) {
+      this.elBtnCollapseCostar.addEventListener('click', () => {
+        this.dismissHint();
+        this.toggleSidebar(false);
+      });
+    }
+
+    if (this.elBtnSidebarKey) {
+      this.elBtnSidebarKey.addEventListener('click', () => {
+        this.showApiKeyModal();
+      });
+    }
+
+    // 3. Clear Pencil Sketch Button
+    if (this.elBtnClearPencil) {
+      this.elBtnClearPencil.addEventListener('click', () => {
+        this.dismissHint();
+        this.paper.clearPencilStrokes();
+        this.audio.playEraserSweep();
+      });
+    }
+
+    // 4. Tools (Breeze, Pencil, Vortex)
     const toolBtns = document.querySelectorAll('.tool-btn');
     toolBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         this.dismissHint();
-        toolBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         const tool = btn.getAttribute('data-tool') as 'breeze' | 'pencil' | 'gust';
-        this.sim.currentTool = tool;
+        this.selectTool(tool);
       });
     });
 
-    // 3. Palettes
+    // 5. Palettes
     const swatches = document.querySelectorAll('.swatch');
     const paletteMap: Record<string, number> = {
       'vermilion': 0,
@@ -194,43 +272,43 @@ export class UIController {
       });
     });
 
-    // 4. Action Buttons
+    // 6. Action Buttons
     const btnGust = document.getElementById('btn-gust')!;
-    btnGust.addEventListener('click', () => {
-      this.dismissHint();
-      this.sim.triggerGust(1.4);
-      this.audio.playLeafRustle(1.0);
-    });
+    if (btnGust) {
+      btnGust.addEventListener('click', () => {
+        this.dismissHint();
+        this.sim.triggerGust(1.4);
+        this.audio.playLeafRustle(1.0);
+      });
+    }
 
     const btnShower = document.getElementById('btn-shower')!;
-    btnShower.addEventListener('click', () => {
-      this.dismissHint();
-      this.sim.spawnFlurry(45);
-      this.audio.playLeafRustle(0.7);
-    });
+    if (btnShower) {
+      btnShower.addEventListener('click', () => {
+        this.dismissHint();
+        this.sim.spawnFlurry(45);
+        this.audio.playLeafRustle(0.7);
+      });
+    }
 
     const btnEvoke = document.getElementById('btn-reveal-words')!;
-    btnEvoke.addEventListener('click', () => {
-      this.dismissHint();
-      this.sim.triggerEvokeWords();
-      this.audio.playLeafRustle(0.9);
-    });
+    if (btnEvoke) {
+      btnEvoke.addEventListener('click', () => {
+        this.dismissHint();
+        this.sim.triggerEvokeWords();
+        this.audio.playLeafRustle(0.9);
+      });
+    }
 
     const btnVf = document.getElementById('btn-toggle-vf')!;
-    btnVf.addEventListener('click', () => {
-      this.viewfinderVisible = !this.viewfinderVisible;
-      if (this.viewfinderVisible) {
-        this.elViewfinder.classList.remove('hidden');
-      } else {
-        this.elViewfinder.classList.add('hidden');
-      }
-    });
+    if (btnVf) {
+      btnVf.addEventListener('click', () => this.toggleViewfinder());
+    }
 
     // Sound toggle
-    this.elBtnSound.addEventListener('click', () => {
-      const active = this.audio.toggleMute();
-      this.elBtnSound.style.opacity = active ? '1.0' : '0.4';
-    });
+    if (this.elBtnSound) {
+      this.elBtnSound.addEventListener('click', () => this.toggleSound());
+    }
 
     // Co-Star controls
     this.elBtnCoStar.addEventListener('click', () => {
@@ -260,13 +338,36 @@ export class UIController {
       });
     }
 
-    // Quick Command Pills
+    // Quick Command Pills (Permanently visible in Option A Studio Rails)
     if (this.elQuickPrompts) {
       const pills = this.elQuickPrompts.querySelectorAll('.prompt-pill');
       pills.forEach((pill) => {
         pill.addEventListener('click', () => {
+          this.dismissHint();
           const prompt = pill.getAttribute('data-prompt');
-          if (prompt && this.onSendPromptCallback) {
+          if (!prompt) return;
+
+          // Haptic tactile animation feedback
+          pill.classList.add('jiggle-bounce');
+          setTimeout(() => pill.classList.remove('jiggle-bounce'), 350);
+
+          // Instant physical response for maximum user delight
+          if (prompt.includes('Gold') || prompt.includes('gold')) {
+            this.setPaletteByName('gold');
+          } else if (prompt.includes('Wind') || prompt.includes('gust')) {
+            this.triggerGust(1.6);
+          } else if (prompt.includes('flurry') || prompt.includes('Flurry')) {
+            this.spawnFlurry(48);
+          } else if (prompt.includes('photo') || prompt.includes('Snap')) {
+            this.handleCapture();
+          } else if (prompt.includes('Sketch a Leaf') || prompt.includes('sketch a leaf')) {
+            this.sketchShape('leaf');
+          } else if (prompt.includes('sign your name') || prompt.includes('Sign Name')) {
+            this.sketchShape('signature');
+          }
+
+          // Relay to Live Co-Star agent
+          if (this.onSendPromptCallback) {
             this.onSendPromptCallback(prompt);
           }
         });
@@ -306,6 +407,49 @@ export class UIController {
     this.elBtnDownload.addEventListener('click', () => this.downloadArtwork());
   }
 
+  public toggleSidebar(forceState?: boolean): void {
+    if (!this.elSidebar) return;
+    this.isSidebarOpen = forceState !== undefined ? forceState : !this.isSidebarOpen;
+    const appContainer = document.getElementById('app-container');
+    if (this.isSidebarOpen) {
+      this.elSidebar.classList.remove('collapsed');
+      if (this.elBtnToggleSidebar) this.elBtnToggleSidebar.classList.add('active');
+      if (appContainer) appContainer.classList.remove('sidebar-collapsed');
+    } else {
+      this.elSidebar.classList.add('collapsed');
+      if (this.elBtnToggleSidebar) this.elBtnToggleSidebar.classList.remove('active');
+      if (appContainer) appContainer.classList.add('sidebar-collapsed');
+    }
+  }
+
+  public selectTool(tool: 'breeze' | 'pencil' | 'gust'): void {
+    this.sim.currentTool = tool;
+    const toolBtns = document.querySelectorAll('.tool-btn');
+    toolBtns.forEach(btn => {
+      if (btn.getAttribute('data-tool') === tool) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  public toggleViewfinder(): void {
+    this.viewfinderVisible = !this.viewfinderVisible;
+    if (this.viewfinderVisible) {
+      this.elViewfinder.classList.remove('hidden');
+    } else {
+      this.elViewfinder.classList.add('hidden');
+    }
+  }
+
+  public toggleSound(): void {
+    const active = this.audio.toggleMute();
+    if (this.elBtnSound) {
+      this.elBtnSound.style.opacity = active ? '1.0' : '0.4';
+    }
+  }
+
   public getStoredApiKey(): string {
     const fromStorage = localStorage.getItem('gemini_live_api_key');
     if (fromStorage && fromStorage.trim() !== '') {
@@ -341,25 +485,29 @@ export class UIController {
       this.elCoStarLabel.textContent = text || 'Connecting...';
       this.elBtnCoStar.title = 'Establishing Gemini Live WebSocket session...';
       if (this.elBtnMicMute) this.elBtnMicMute.classList.add('hidden');
-      if (this.elQuickPrompts) this.elQuickPrompts.classList.add('hidden');
+      if (this.elCostarLiveDot) this.elCostarLiveDot.style.background = 'var(--status-connecting)';
+      if (this.elCostarSessionBadge) this.elCostarSessionBadge.textContent = 'Connecting...';
     } else if (state === 'connected') {
       this.elBtnCoStar.classList.add('connected');
       this.elCoStarLabel.textContent = text || 'Disconnect Co-Star';
       this.elBtnCoStar.title = 'Co-Star connected! Speak into your mic or click quick prompt pills.';
       if (this.elBtnMicMute) this.elBtnMicMute.classList.remove('hidden');
-      if (this.elQuickPrompts) this.elQuickPrompts.classList.remove('hidden');
+      if (this.elCostarLiveDot) this.elCostarLiveDot.style.background = 'var(--status-live)';
+      if (this.elCostarSessionBadge) this.elCostarSessionBadge.textContent = 'Live Session Active';
     } else if (state === 'error') {
       this.elBtnCoStar.classList.add('error');
       const shortErr = text && text.length > 20 ? text.slice(0, 18) + '...' : (text || 'Error (Retry)');
       this.elCoStarLabel.textContent = shortErr;
       this.elBtnCoStar.title = text ? `Error: ${text} (Click to retry or check API key)` : 'Connection error. Click to retry.';
       if (this.elBtnMicMute) this.elBtnMicMute.classList.add('hidden');
-      if (this.elQuickPrompts) this.elQuickPrompts.classList.add('hidden');
+      if (this.elCostarLiveDot) this.elCostarLiveDot.style.background = 'var(--status-error)';
+      if (this.elCostarSessionBadge) this.elCostarSessionBadge.textContent = 'Connection Error';
     } else {
       this.elCoStarLabel.textContent = text || 'Connect Co-Star';
       this.elBtnCoStar.title = 'Start Gemini Multimodal Live Co-Star';
       if (this.elBtnMicMute) this.elBtnMicMute.classList.add('hidden');
-      if (this.elQuickPrompts) this.elQuickPrompts.classList.add('hidden');
+      if (this.elCostarLiveDot) this.elCostarLiveDot.style.background = 'var(--status-live)';
+      if (this.elCostarSessionBadge) this.elCostarSessionBadge.textContent = 'Gemini Live Ready';
     }
   }
 
@@ -443,6 +591,7 @@ export class UIController {
     const flurryCount = count ?? 45;
     this.sim.spawnFlurry(flurryCount);
     this.audio.playLeafRustle(0.7);
+    if (this.elLeaves) this.elLeaves.textContent = this.sim.leaves.length.toString();
     return { success: true, spawnedCount: flurryCount };
   }
 
@@ -452,10 +601,39 @@ export class UIController {
     return { success: true };
   }
 
+  public setCoStarSpeaking(speaking: boolean): void {
+    if (this.elCostarWave) {
+      if (speaking) {
+        this.elCostarWave.classList.add('active');
+      } else {
+        this.elCostarWave.classList.remove('active');
+      }
+    }
+  }
+
+  public getPencilColorForCurrentPalette(): string {
+    switch (this.sim.currentPalette) {
+      case 1:
+        // Ginkgo / Autumn Gold (warm amber ochre)
+        return 'oklch(0.72 0.17 78 / 0.85)';
+      case 2:
+        // Deep Woodland (russet sienna umber)
+        return 'oklch(0.44 0.125 42 / 0.85)';
+      case 3:
+        // Twilight Frost (mulberry plum indigo)
+        return 'oklch(0.42 0.125 315 / 0.85)';
+      case 0:
+      default:
+        // October Vermilion (rich crimson cinnabar)
+        return 'oklch(0.53 0.21 28 / 0.85)';
+    }
+  }
+
   public sketchShape(
     shape: 'leaf' | 'signature' | 'circle' | 'spiral' = 'leaf',
-    color: string = 'rgba(192, 57, 43, 0.75)'
+    color?: string
   ): { success: boolean; shape: string } {
+    const strokeColor = color || this.getPencilColorForCurrentPalette();
     const strokes = this.getShapeStrokes(shape);
     let strokeIdx = 0;
     let ptIdx = 0;
@@ -466,16 +644,19 @@ export class UIController {
       if (ptIdx + 1 < currentStroke.length) {
         const [x0, y0] = currentStroke[ptIdx];
         const [x1, y1] = currentStroke[ptIdx + 1];
-        this.paper.drawPencilStroke(x0, y0, x1, y1, color, 3.2);
+        // Natural colored pencil pressure variation along stroke
+        const progress = ptIdx / Math.max(1, currentStroke.length - 1);
+        const strokeWidth = 2.4 + Math.sin(progress * Math.PI) * 1.4;
+        this.paper.drawPencilStroke(x0, y0, x1, y1, strokeColor, strokeWidth);
         if (ptIdx % 3 === 0) {
           this.audio.playPencilScratch();
         }
         ptIdx++;
-        setTimeout(step, 16);
+        setTimeout(step, 14);
       } else {
         strokeIdx++;
         ptIdx = 0;
-        setTimeout(step, 25);
+        setTimeout(step, 20);
       }
     };
 

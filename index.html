@@ -24,49 +24,6 @@
         </div>
 
         <div class="header-right">
-          <!-- Gemini Multimodal Live Co-Star -->
-          <div class="costar-control-cluster">
-            <label for="select-costar-model" class="sr-only">Gemini Live Model</label>
-            <select id="select-costar-model" class="costar-select" title="Gemini Live Model" aria-label="Select Gemini Live Model">
-              <option value="models/gemini-3.8-live" selected>Gemini 3.8 Live</option>
-              <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-              <option value="models/gemini-2.0-flash-realtime-exp">Gemini 2.0 Realtime</option>
-              <option value="models/gemini-3.8-live-extended-thinking">Gemini 3.8 (Thinking)</option>
-            </select>
-
-            <label for="select-costar-voice" class="sr-only">Co-Star Voice</label>
-            <select id="select-costar-voice" class="costar-select" title="Co-Star Voice" aria-label="Select Co-Star Voice">
-              <option value="Capella" selected>Capella (British Accent)</option>
-              <option value="Fenrir">Fenrir (Theatrical & Bold)</option>
-              <option value="Puck">Puck (Lively & Witty)</option>
-              <option value="Charon">Charon (Deep & Sardonic)</option>
-              <option value="Orion">Orion (Resonant Male)</option>
-              <option value="Aoede">Aoede (Warm & Melodic)</option>
-              <option value="Kore">Kore (Crisp & Direct)</option>
-            </select>
-
-            <button id="btn-toggle-costar" class="btn-costar" title="Start Gemini Multimodal Live Co-Star" aria-label="Start Gemini Multimodal Live Co-Star">
-              <span class="costar-indicator-dot"></span>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-              <span id="costar-btn-label">Connect Co-Star</span>
-            </button>
-
-            <!-- Mic Mute Toggle Button -->
-            <button id="btn-mic-mute" class="btn-icon costar-mic-btn hidden" title="Mute/Unmute Mic" aria-label="Mute or Unmute Microphone">
-              <svg id="icon-mic-active" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            </button>
-          </div>
-
           <!-- 30s Demo Recorder -->
           <button id="btn-record-demo" class="btn-record" title="Record 30-second stage demo with mixed audio" aria-label="Record 30-second stage demo with mixed audio">
             <span class="rec-dot"></span>
@@ -90,19 +47,17 @@
             <span>Capture</span>
             <kbd>Space</kbd>
           </button>
+
+          <!-- Toggle Co-Star Sidebar Button -->
+          <button id="btn-toggle-sidebar" class="btn-icon btn-sidebar-toggle" title="Toggle Co-Star Sidebar (Tab)" aria-label="Toggle Co-Star Sidebar">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+              <path d="M9.5 9.5l2.5 2.5-2.5 2.5"></path>
+            </svg>
+          </button>
         </div>
       </header>
-
-        <!-- Co-Star Quick Command Suggestion Bar -->
-      <div id="costar-quick-prompts" class="costar-quick-prompts hidden">
-        <span class="quick-prompts-label">✨ Prompt Alastair:</span>
-        <button class="prompt-pill" data-prompt="Switch to the gold palette and warm up these leaves!">🍁 Gold</button>
-        <button class="prompt-pill" data-prompt="Alastair, sign your name at the top of the sketchbook!">✍️ Sign Name</button>
-        <button class="prompt-pill" data-prompt="Alastair, use your pencil to sketch a leaf on the paper!">✏️ Sketch Leaf</button>
-        <button class="prompt-pill" data-prompt="Blow a dramatic autumn wind gust across the leaves!">💨 Wind Gust</button>
-        <button class="prompt-pill" data-prompt="Release a flurry of leaves from the canopy!">🍂 Leaf Flurry</button>
-        <button class="prompt-pill" data-prompt="Take a photo and frame the artwork for exhibition!">📷 Snap Photo</button>
-      </div>
 
       <!-- Viewfinder Overlay (Toggleable / Pencil Guides) -->
       <div id="viewfinder" class="viewfinder active">
@@ -115,97 +70,99 @@
           <div class="crosshair-v"></div>
         </div>
         <div class="viewfinder-tag">
-          <span class="vf-spec">35mm • F/2.8 • 1/120s • COLD PRESS</span>
+          <span class="vf-spec">35mm • F/2.8 • 1/120s • FABRIANO COLD PRESS ARCHIVAL</span>
         </div>
       </div>
 
-      <!-- Floating Controls Dock -->
-      <nav id="control-dock">
+      <!-- Left Easel Rail: Physical Drawing Tools, Palettes & Actions -->
+      <nav id="control-dock" class="studio-rail-left" role="toolbar" aria-label="Studio Easel Rail">
         <!-- Tool Selection -->
         <div class="control-group tools-group">
-          <label class="group-label">Tool</label>
-          <div class="btn-toggle-group">
-            <button class="tool-btn active" data-tool="breeze" title="Breeze: Stir leaves with mouse wind">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <span class="rail-section-label">Tools</span>
+          <div class="btn-toggle-group vertical-toggle">
+            <button class="tool-btn active" data-tool="breeze" title="Breeze Tool (1): Stir leaves with mouse wind" aria-label="Breeze Tool">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
               </svg>
-              <span>Breeze</span>
+              <span class="tool-caption">Breeze</span>
             </button>
-            <button class="tool-btn" data-tool="pencil" title="Pencil: Sketch colored pencil strokes on paper">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="tool-btn" data-tool="pencil" title="Pencil Tool (2): Sketch colored wax pencil strokes on paper" aria-label="Pencil Tool">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="m18 2 4 4-14 14H4v-4L18 2z"></path>
                 <path d="m14.5 5.5 4 4"></path>
               </svg>
-              <span>Pencil</span>
+              <span class="tool-caption">Pencil</span>
             </button>
-            <button class="tool-btn" data-tool="gust" title="Whirlwind: Sweep and lift leaves in a vortex">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="tool-btn" data-tool="gust" title="Whirlwind Vortex (3): Sweep and lift leaves in a vortex" aria-label="Vortex Tool">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
                 <path d="M16 12a4 4 0 1 1-2.764-3.8"></path>
               </svg>
-              <span>Vortex</span>
+              <span class="tool-caption">Vortex</span>
             </button>
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider horizontal-divider"></div>
 
         <!-- Palette Selector -->
-        <div class="control-group">
-          <label class="group-label">Palette</label>
-          <div class="palette-swatches">
-            <button class="swatch active" data-palette="vermilion" title="October Maple: Vermilion, Crimson, Amber">
-              <span class="swatch-color" style="background: linear-gradient(135deg, #c0392b, #e67e22, #f39c12);"></span>
-              <span class="swatch-name">October</span>
+        <div class="control-group palette-group">
+          <span class="rail-section-label">Palette</span>
+          <div class="palette-swatches vertical-swatches">
+            <button class="swatch active" data-palette="vermilion" title="October Maple: Vermilion, Crimson, Amber" aria-label="October Maple Palette">
+              <span class="swatch-color" style="background: linear-gradient(135deg, oklch(0.53 0.21 28), oklch(0.68 0.19 50), oklch(0.78 0.17 80));"></span>
+              <span class="swatch-name sr-only">October</span>
             </button>
-            <button class="swatch" data-palette="gold" title="Autumn Gold: Warm Ochre, Honey Amber, Sepia">
-              <span class="swatch-color" style="background: linear-gradient(135deg, #f1c40f, #d4ac0d, #b7950b);"></span>
-              <span class="swatch-name">Gold</span>
+            <button class="swatch" data-palette="gold" title="Autumn Gold: Warm Ochre, Honey Amber, Sepia" aria-label="Autumn Gold Palette">
+              <span class="swatch-color" style="background: linear-gradient(135deg, oklch(0.85 0.17 90), oklch(0.76 0.16 80), oklch(0.60 0.14 70));"></span>
+              <span class="swatch-name sr-only">Gold</span>
             </button>
-            <button class="swatch" data-palette="woodland" title="Deep Woodland: Russet, Sepia, Moss, Terracotta">
-              <span class="swatch-color" style="background: linear-gradient(135deg, #784212, #a04000, #566573);"></span>
-              <span class="swatch-name">Russet</span>
+            <button class="swatch" data-palette="woodland" title="Deep Woodland: Russet, Sepia, Moss, Terracotta" aria-label="Deep Woodland Palette">
+              <span class="swatch-color" style="background: linear-gradient(135deg, oklch(0.42 0.12 40), oklch(0.50 0.13 45), oklch(0.48 0.05 130));"></span>
+              <span class="swatch-name sr-only">Russet</span>
             </button>
-            <button class="swatch" data-palette="twilight" title="Twilight Frost: Plum, Rose Ochre, Slate Violet">
-              <span class="swatch-color" style="background: linear-gradient(135deg, #5b2c6f, #99a3a4, #b03a2e);"></span>
-              <span class="swatch-name">Twilight</span>
+            <button class="swatch" data-palette="twilight" title="Twilight Frost: Plum, Rose Ochre, Slate Violet" aria-label="Twilight Frost Palette">
+              <span class="swatch-color" style="background: linear-gradient(135deg, oklch(0.42 0.13 315), oklch(0.62 0.11 350), oklch(0.55 0.06 280));"></span>
+              <span class="swatch-name sr-only">Twilight</span>
             </button>
           </div>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider horizontal-divider"></div>
 
         <!-- Action Buttons -->
         <div class="control-group actions-group">
-          <label class="group-label">Actions</label>
-          <div class="action-buttons">
-            <button id="btn-gust" class="btn-secondary" title="Blow a strong autumn gust across the scene">
+          <span class="rail-section-label">Actions</span>
+          <div class="action-buttons vertical-actions">
+            <button id="btn-gust" class="rail-action-btn" title="Wind Gust (G): Blow a strong autumn gust across the scene" aria-label="Wind Gust">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path>
                 <path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path>
                 <path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path>
               </svg>
-              <span>Wind Gust</span>
             </button>
-            <button id="btn-shower" class="btn-secondary" title="Release a flurry of leaves from the canopy">
+            <button id="btn-shower" class="rail-action-btn" title="Flurry (F): Release a canopy flurry of falling leaves" aria-label="Leaf Flurry">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"></path>
               </svg>
-              <span>Flurry</span>
             </button>
-            <button id="btn-reveal-words" class="btn-secondary" title="Evoke: wind draws 'capture the moment'">
+            <button id="btn-reveal-words" class="rail-action-btn" title="Evoke Text (E / M): Wind traces 'capture the moment' calligraphy" aria-label="Evoke Inscription">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
-              <span>Evoke Text</span>
             </button>
-            <button id="btn-toggle-vf" class="btn-icon" title="Toggle Sketchbook Viewfinder" aria-label="Toggle Sketchbook Viewfinder">
+            <button id="btn-clear-pencil" class="rail-action-btn" title="Clear Pencil Marks (C): Erase all hand-sketched strokes" aria-label="Clear Pencil Strokes">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+            <button id="btn-toggle-vf" class="rail-action-btn" title="Toggle 35mm Viewfinder Frame (V)" aria-label="Toggle Viewfinder">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 7V3h4m10 0h4v4M3 17v4h4m10 0h4v-4"></path>
               </svg>
             </button>
-            <button id="btn-toggle-sound" class="btn-icon" title="Toggle Sketch Sounds" aria-label="Toggle Sketch Sounds">
+            <button id="btn-toggle-sound" class="rail-action-btn" title="Toggle Sketch Sounds (S)" aria-label="Toggle Sketch Sounds">
               <svg id="icon-sound-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -214,25 +171,149 @@
             </button>
           </div>
         </div>
+      </nav>
 
-        <div class="divider"></div>
-
-        <!-- Telemetry & Stats -->
-        <div class="control-group telemetry-group">
-          <div class="stat-row">
-            <span class="stat-label">Leaves:</span>
-            <span id="stat-leaves" class="stat-value">250</span>
+      <!-- Right Studio Sidebar: Gemini Live Co-Star & Quick Voice Prompts -->
+      <aside id="costar-sidebar" class="costar-sidebar" role="region" aria-label="Gemini Live Co-Star Assistant">
+        <!-- Sidebar Header -->
+        <div class="costar-sidebar-header">
+          <div class="costar-title-row">
+            <span class="costar-status-dot" id="costar-live-dot"></span>
+            <div class="costar-name-wrap">
+              <h2 class="costar-assistant-title">Alastair</h2>
+              <span class="costar-role-subtitle">Live Studio Co-Star</span>
+            </div>
+            <span class="costar-sidebar-wave" id="costar-sidebar-wave" title="Voice Output Active">
+              <i></i><i></i><i></i><i></i>
+            </span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Ground:</span>
-            <span id="stat-ground" class="stat-value">0</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">FPS:</span>
-            <span id="stat-fps" class="stat-value">60</span>
+          <div class="costar-header-actions">
+            <!-- Mic Mute Button -->
+            <button id="btn-mic-mute" class="costar-mic-btn hidden" title="Mute/Unmute Mic" aria-label="Mute or Unmute Microphone">
+              <svg id="icon-mic-active" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+            <!-- Collapse Button -->
+            <button id="btn-collapse-costar" class="btn-icon btn-collapse" title="Collapse Co-Star Sidebar" aria-label="Collapse Co-Star Sidebar">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"></path>
+              </svg>
+            </button>
           </div>
         </div>
-      </nav>
+
+        <!-- Connection Button -->
+        <div class="costar-connect-wrap">
+          <button id="btn-toggle-costar" class="btn-costar-primary" title="Start Gemini Multimodal Live Co-Star" aria-label="Start Gemini Multimodal Live Co-Star">
+            <span class="costar-indicator-dot"></span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span id="costar-btn-label">Connect Co-Star</span>
+          </button>
+        </div>
+
+        <!-- Model & Voice Selectors -->
+        <div class="costar-config-stack">
+          <div class="costar-field">
+            <label for="select-costar-model" class="costar-field-label">Live Model</label>
+            <select id="select-costar-model" class="costar-select-native" title="Gemini Live Model" aria-label="Select Gemini Live Model">
+              <option value="models/gemini-3.8-live" selected>Gemini 3.8 Live</option>
+              <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+              <option value="models/gemini-2.0-flash-realtime-exp">Gemini 2.0 Realtime</option>
+              <option value="models/gemini-3.8-live-extended-thinking">Gemini 3.8 (Thinking)</option>
+            </select>
+          </div>
+
+          <div class="costar-field">
+            <label for="select-costar-voice" class="costar-field-label">Voice Tone</label>
+            <select id="select-costar-voice" class="costar-select-native" title="Co-Star Voice" aria-label="Select Co-Star Voice">
+              <option value="Capella" selected>Capella (British Accent)</option>
+              <option value="Fenrir">Fenrir (Theatrical & Bold)</option>
+              <option value="Puck">Puck (Lively & Witty)</option>
+              <option value="Charon">Charon (Deep & Sardonic)</option>
+              <option value="Orion">Orion (Resonant Male)</option>
+              <option value="Aoede">Aoede (Warm & Melodic)</option>
+              <option value="Kore">Kore (Crisp & Direct)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Quick Prompts Stack: Permanently Visible in Option A Studio Rails -->
+        <div id="costar-quick-prompts" class="costar-quick-prompts" role="region" aria-label="Quick Voice Prompts">
+          <div class="quick-prompts-header">
+            <span class="quick-prompts-label">✨ Quick Prompts</span>
+            <span class="quick-prompts-caption">1-Click Voice</span>
+          </div>
+          <div class="quick-prompts-stack">
+            <button class="prompt-pill" data-prompt="Switch to the gold palette and warm up these leaves!" aria-label="Prompt: Switch to Gold Palette">
+              <span class="prompt-pill-text">🍁 Switch to Gold Palette</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+            <button class="prompt-pill" data-prompt="Alastair, sign your name at the top of the sketchbook!" aria-label="Prompt: Sign Name on Paper">
+              <span class="prompt-pill-text">✍️ Sign Name on Paper</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+            <button class="prompt-pill" data-prompt="Alastair, use your pencil to sketch a leaf on the paper!" aria-label="Prompt: Sketch a Leaf">
+              <span class="prompt-pill-text">✏️ Sketch a Leaf</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+            <button class="prompt-pill" data-prompt="Blow a dramatic autumn wind gust across the leaves!" aria-label="Prompt: Dramatic Wind Gust">
+              <span class="prompt-pill-text">💨 Dramatic Wind Gust</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+            <button class="prompt-pill" data-prompt="Release a flurry of leaves from the canopy!" aria-label="Prompt: Canopy Flurry">
+              <span class="prompt-pill-text">🍂 Canopy Flurry</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+            <button class="prompt-pill" data-prompt="Take a photo and frame the artwork for exhibition!" aria-label="Prompt: Snap and Frame Photo">
+              <span class="prompt-pill-text">📷 Snap & Frame Photo</span>
+              <span class="prompt-arrow">→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="costar-sidebar-footer">
+          <button id="btn-sidebar-key" class="sidebar-key-btn" title="Configure Gemini API Key" aria-label="API Key Settings">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>API Key</span>
+          </button>
+          <span class="costar-session-badge" id="costar-session-badge">Gemini Live Ready</span>
+        </div>
+      </aside>
+
+      <!-- Bottom Floating Telemetry Capsule -->
+      <div id="telemetry-hud" class="telemetry-hud" role="status" aria-live="polite">
+        <div class="stat-row">
+          <span class="stat-label">Leaves:</span>
+          <span id="stat-leaves" class="stat-value">130</span>
+        </div>
+        <span class="stat-dot">•</span>
+        <div class="stat-row">
+          <span class="stat-label">Ground:</span>
+          <span id="stat-ground" class="stat-value">0</span>
+        </div>
+        <span class="stat-dot">•</span>
+        <div class="stat-row">
+          <span class="stat-label">FPS:</span>
+          <span id="stat-fps" class="stat-value">60</span>
+        </div>
+        <span class="stat-dot">•</span>
+        <span class="telemetry-hint">Drag to swirl • Space to capture • Tab for Co-Star</span>
+      </div>
 
       <!-- Live Interactive Prompt / Hint -->
       <div id="interaction-hint">

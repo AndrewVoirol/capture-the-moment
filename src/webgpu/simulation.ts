@@ -218,7 +218,10 @@ export class LeafSimulation {
           disturbed = true;
           p.vy = 0.22 + Math.random() * 0.42;
           p.vx = gustX * (0.45 + Math.random() * 0.5);
+          p.vz = (Math.random() - 0.5) * 0.15;
           p.vPitch = (Math.random() - 0.5) * 8.0;
+          p.vRoll = (Math.random() - 0.5) * 6.0;
+          p.vYaw = (Math.random() - 0.5) * 6.0;
         }
 
         if (this.mouseActive) {
@@ -231,14 +234,18 @@ export class LeafSimulation {
             const force = (0.45 - dist) / 0.45;
             p.vy = 0.65 * force + Math.random() * 0.2;
             p.vx = (this.mouseVx * 0.8 + (Math.random() - 0.5) * 0.4) * force;
+            p.vz = (Math.random() - 0.5) * 0.25 * force;
             p.vRoll = (Math.random() - 0.5) * 12.0;
+            p.vYaw = (Math.random() - 0.5) * 10.0;
           } else if (this.currentTool === 'breeze' && dist < 0.28) {
             const speed = Math.hypot(this.mouseVx, this.mouseVy);
             if (speed > 0.18) {
               disturbed = true;
               p.vy = 0.16 * speed;
               p.vx = this.mouseVx * 0.35;
+              p.vz = (Math.random() - 0.5) * 0.08;
               p.vPitch += (Math.random() - 0.5) * 3.5;
+              p.vRoll += (Math.random() - 0.5) * 2.5;
             }
           }
         }
@@ -258,27 +265,36 @@ export class LeafSimulation {
       // Status 0 or 3: Airborne
       p.flutterPhase += dt * p.flutterFreq;
 
-      // 1. Gravity & Terminal Velocity
-      const gravity = -0.72;
+      // 1. Gravity, Angle-of-Attack Aerodynamic Drag & Terminal Velocity
+      const gravity = -0.70;
       p.vy += gravity * dt;
 
-      const maxFallSpeed = -0.42;
+      // Broadside vs knife-edge cross-sectional drag: flat leaves glide gently, tilted leaves dive
+      const broadside = Math.abs(Math.cos(p.pitch) * Math.cos(p.roll));
+      const maxFallSpeed = -0.30 - (1.0 - broadside) * 0.22;
       if (p.vy < maxFallSpeed) {
-        p.vy += (maxFallSpeed - p.vy) * dt * 4.0;
+        p.vy += (maxFallSpeed - p.vy) * dt * 4.2;
       }
 
       // 2. Zhukovsky Aerodynamic Flutter:
-      // Coupled side-to-side lift and roll oscillation
-      const flutterForce = Math.sin(p.flutterPhase) * 0.45;
+      // Multi-harmonic side-to-side lift oscillation and roll-yaw coupling
+      const flutterForce = Math.sin(p.flutterPhase) * 0.44 + Math.sin(p.flutterPhase * 2.14 + 0.4) * 0.13;
       p.vx += flutterForce * dt;
-      p.vRoll = Math.cos(p.flutterPhase) * 2.4;
+      p.vRoll = Math.cos(p.flutterPhase) * 2.5 + Math.sin(p.flutterPhase * 1.7) * 0.7;
 
-      // Pitch autorotation tumble when tilted steeply
-      p.vPitch += Math.sin(p.pitch * 2.0) * 1.6 * dt;
+      // Roll-yaw coupling: banking leaf turns into the direction of roll
+      p.vYaw += Math.sin(p.roll) * 1.8 * dt;
 
-      // 3. Ambient Wind & Updrafts
-      p.vx += (totalWindX - p.vx) * dt * 0.65;
-      p.vy += Math.sin(p.x * 3.0 + p.flutterPhase) * 0.08 * dt;
+      // 3D aerodynamic lift along Z axis (depth undulation as leaf banks and rolls)
+      const zLift = Math.sin(p.yaw) * Math.sin(p.roll) * 0.28 + Math.cos(p.flutterPhase * 1.3) * 0.05;
+      p.vz += (zLift - p.vz * 1.6) * dt;
+
+      // Pitch autorotation tumble & restorative torque when tilted
+      p.vPitch += (Math.sin(p.pitch * 2.0) * 1.5 + Math.cos(p.flutterPhase) * 0.6) * dt;
+
+      // 3. Ambient Wind & Natural Thermal Updrafts
+      p.vx += (totalWindX - p.vx) * dt * 0.68;
+      p.vy += (Math.sin(p.x * 2.8 + p.flutterPhase) * 0.09 + Math.cos(p.y * 2.4 + p.flutterPhase * 0.7) * 0.05) * dt;
 
       // 4. Mouse Interactivity
       if (this.mouseActive) {
