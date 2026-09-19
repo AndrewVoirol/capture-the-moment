@@ -5,6 +5,9 @@ import { LeafRenderer } from './webgpu/leaf-renderer';
 import { TextRenderer } from './webgpu/text-renderer';
 import { SketchAudio } from './audio/sketch-audio';
 import { UIController } from './ui/controls';
+import { GeminiLiveClient } from './live/live-client';
+import { CaptionOverlay } from './ui/caption-overlay';
+import { DemoRecorder } from './ui/demo-recorder';
 
 class AutumnSketchbookApp {
   private canvas!: HTMLCanvasElement;
@@ -15,6 +18,12 @@ class AutumnSketchbookApp {
   private textRenderer!: TextRenderer;
   private audio!: SketchAudio;
   private ui!: UIController;
+
+  // Gemini Live & Recording Subsystems
+  private liveClient!: GeminiLiveClient;
+  private captionOverlay!: CaptionOverlay;
+  private demoRecorder!: DemoRecorder;
+  private isCoStarConnected: boolean = false;
 
   // Frame timing
   private lastTime: number = 0;
@@ -55,11 +64,58 @@ class AutumnSketchbookApp {
     const waypoints = this.textRenderer.extractStrokeWaypoints(140);
     this.sim.setWordWaypoints(waypoints);
 
+    // Live AI & Recording subsystems
+    this.captionOverlay = new CaptionOverlay();
+    this.demoRecorder = new DemoRecorder();
+
+    this.liveClient = new GeminiLiveClient(
+      {
+        changePalette: (pal) => this.ui.setPaletteByName(pal),
+        triggerWindGust: (strength) => this.ui.triggerGust(strength),
+        spawnFlurry: (count) => this.ui.spawnFlurry(count),
+        evokeInscription: () => this.ui.triggerEvokeWords(),
+        captureArtwork: () => this.ui.handleCapture(),
+      },
+      {
+        onStatusChange: (status, errorMsg) => {
+          this.isCoStarConnected = status === 'connected';
+          this.ui.setCoStarButtonState(status, errorMsg);
+        },
+        onUserTranscript: (text) => {
+          this.captionOverlay.showUserTranscript(text);
+        },
+        onCoStarTranscript: (text, isChunk) => {
+          if (isChunk) {
+            this.captionOverlay.appendCoStarTranscript(text);
+          } else {
+            this.captionOverlay.showCoStarTranscript(text);
+          }
+        },
+        onCoStarSpeakingChange: (speaking) => {
+          this.captionOverlay.setCoStarSpeaking(speaking);
+        },
+        onToolExecuted: (name, desc) => {
+          this.captionOverlay.showActionToast(name, desc);
+        },
+        onMicMuteChange: (muted) => {
+          this.ui.setMicMuteState(muted);
+        }
+      }
+    );
+
     this.ui = new UIController(
       this.sim,
       this.paper,
       this.audio,
-      () => this.onCaptureMoment()
+      () => this.onCaptureMoment(),
+      {
+        onToggleCoStar: () => this.toggleCoStar(),
+        onModelChange: (model) => this.liveClient.setModel(model),
+        onVoiceChange: (voice) => this.liveClient.setVoice(voice),
+        onToggleRecord: () => this.toggleRecordDemo(),
+        onToggleMicMute: () => this.liveClient.toggleMicMute(),
+        onSendPrompt: (prompt) => this.liveClient.sendUserText(prompt)
+      }
     );
 
     this.setupPointerEvents();
@@ -298,10 +354,75 @@ class AutumnSketchbookApp {
 
     requestAnimationFrame((t) => this.renderLoop(t));
   }
+
+  private getCanvasFrameJpeg(): string | null {
+    try {
+      if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) return null;
+      const dataUrl = this.canvas.toDataURL('image/jpeg', 0.4);
+      return dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+    } catch (e) {
+      console.warn('Canvas frame capture error:', e);
+      return null;
+    }
+  }
+
+  private async toggleCoStar() {
+    if (this.isCoStarConnected) {
+      this.liveClient.disconnect();
+      this.isCoStarConnected = false;
+      this.captionOverlay.clear();
+      return;
+    }
+
+    const apiKey = this.ui.getStoredApiKey();
+    if (!apiKey) {
+      this.ui.showApiKeyModal();
+      return;
+    }
+
+    // Pass selected model & voice from UI
+    const model = this.ui.getSelectedModel();
+    this.liveClient.setModel(model);
+    const voice = this.ui.getSelectedVoice();
+    this.liveClient.setVoice(voice);
+
+    // Initialize AudioContext directly in this click event to satisfy browser Autoplay Policy
+    try {
+      await this.liveClient.getAudioIO().initUserAudio();
+    } catch (err) {
+      console.warn('AudioContext / mic pre-init on click:', err);
+    }
+
+    await this.liveClient.connect(apiKey, () => this.getCanvasFrameJpeg());
+  }
+
+  private toggleRecordDemo() {
+    if (this.demoRecorder.recording) {
+      this.demoRecorder.stop();
+      this.ui.setRecordButtonState(false);
+    } else {
+      const mixedAudio = this.liveClient.getAudioIO().getMixedAudioStream();
+      const started = this.demoRecorder.start(
+        this.canvas,
+        mixedAudio,
+        (timeStr) => {
+          this.ui.setRecordButtonState(true, timeStr);
+        }
+      );
+      if (started) {
+        this.ui.setRecordButtonState(true, '00:00');
+      }
+    }
+  }
+  public getLiveClient(): GeminiLiveClient {
+    return this.liveClient;
+  }
 }
 
 // Bootstrap
 window.addEventListener('DOMContentLoaded', () => {
   const app = new AutumnSketchbookApp();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).app = app;
   app.start().catch(console.error);
 });
